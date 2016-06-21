@@ -1,0 +1,71 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns=http://www.w3.org/1999/xhtml>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+		<meta name="author" content="张宝财 &lt; talent518@yeah.net &gt;" />
+		<meta name="copyright" content="张宝财 &lt; talent518@yeah.net &gt;" />
+		<title>斗地主</title>
+		<link href="landlords.css" media="screen" rel="stylesheet" type="text/css" />
+		<script type="text/javascript" src="jquery.min.js"></script>
+		<script type="text/javascript" src="landlords.js"></script>
+	</head>
+	<body>
+		<script type="text/javascript">
+		var zIndex = 54;
+		var PaddingLeftOrTop = '85px';
+		var wrapperElem = $('<div style="padding-left:' + PaddingLeftOrTop + ';"></div>').appendTo(document.body);
+		var wrapperRightElem = $('<div style="float:right;padding-left:20px;padding-top:' + PaddingLeftOrTop + '"></div>').appendTo(document.body);
+		var wrapperLeftElem = $('<div style="padding-left:20px;padding-top:' + PaddingLeftOrTop + '"></div>').appendTo(document.body);
+
+		(function() {
+			var i, k, p, puke54Array = [];
+
+			for(k in $.landlordsGlobalOptions.puke54Object) {
+				puke54Array.push(k);
+			}
+
+			while(puke54Array.length > 0) {
+				if(puke54Array.length > 1) {
+					i = $.landlords.prototype.randInt(puke54Array.length);
+					k = puke54Array[i];
+					puke54Array.splice(i, 1);
+				} else {
+					k = puke54Array.pop();
+				}
+
+				p = $.landlordsGlobalOptions.puke54Object[k];
+
+				$('<div></div>').attr('title', k + ' - ' + p.title).css({
+					float: 'left',
+					width: $.landlordsGlobalOptions.puke54Options.width,
+					height: $.landlordsGlobalOptions.puke54Options.height,
+					overflow: 'hidden',
+					marginLeft: '-' + PaddingLeftOrTop,
+					marginTop: '20px',
+					marginBottom: '10px',
+				}).css($.landlordsGlobalOptions.puke54BackgroundStyleArray[p.Y][p.X].normal).appendTo(wrapperElem).click(function() {
+					$(this).css('marginTop', $(this).css('marginTop') == '0px' ? '20px' : '0px');
+				});
+
+				$('<div></div>').attr('title', k + ' - ' + p.title).css({
+					width: $.landlordsGlobalOptions.puke54Options.height,
+					height: $.landlordsGlobalOptions.puke54Options.width,
+					overflow: 'hidden',
+					marginLeft: '-20px',
+					marginTop: '-' + PaddingLeftOrTop,
+				}).css($.landlordsGlobalOptions.puke54BackgroundStyleArray[p.Y][p.X].r90).appendTo(wrapperLeftElem).click(function() {
+					$(this).css('marginLeft', $(this).css('marginLeft') == '0px' ? '-20px' : '0px');
+				}).clone().css({
+					position: 'relative',
+					zIndex: zIndex--
+				}).appendTo(wrapperRightElem).click(function() {
+					$(this).css('marginLeft', $(this).css('marginLeft') == '0px' ? '-20px' : '0px');
+				});
+			}
+		})();
+
+		$('<div style="clear:both;"></div>').appendTo(wrapperElem);
+		</script>
+	</body>
+</html>
