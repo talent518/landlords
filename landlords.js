@@ -55,13 +55,14 @@
 		puke54Object: {},
 		puke54BackgroundStyleArray: [],
 		puke54Options: {
-			width: 116,
-			height: 177,
-			positionX: 120,
-			positionY: 182
-		}
+			width: 93,
+			height: 119,
+			positionX: 100,
+			positionY: 130
+		},
+		paddingLeftOrTop: '58px'
 	};
-	
+
 	var pukeTitleArray = ['红桃(hearts)', '方块(diamonds)', '梅花(club)', '黑桃(spade)'];
 	var pukeYArray = ['H', 'D', 'C', 'S'];
 	var pukeXArray = ['A', 2, 3, 4, 5, 6, 7, 8, 9, 10, 'J', 'Q', 'K'];
@@ -94,17 +95,70 @@
 
 		return {
 			normal: {
-				background: 'transparent url(puke54.png) no-repeat',
+				background: 'transparent url(images/puke54.png) no-repeat',
 				backgroundPositionX: (-$.landlordsGlobalOptions.puke54Options.positionX * x) + 'px',
 				backgroundPositionY: (-$.landlordsGlobalOptions.puke54Options.positionY * y) + 'px'
 			},
 			r90: {
-				background: 'transparent url(puke54-r90.png) no-repeat',
+				background: 'transparent url(images/puke54-r90.png) no-repeat',
 				backgroundPositionY: (-$.landlordsGlobalOptions.puke54Options.positionX * x) + 'px',
 				backgroundPositionX: (-$.landlordsGlobalOptions.puke54Options.positionY * (4-y) - r90PositionX ) + 'px'
 			}
 		};
 	});
+
+	$.landlordsDemo = function() {
+		var zIndex = 54;
+		var wrapperElem = $('<div style="padding-left:' + $.landlordsGlobalOptions.paddingLeftOrTop + ';"></div>').appendTo(document.body);
+		var wrapperRightElem = $('<div style="float:right;padding-left:20px;padding-top:' + $.landlordsGlobalOptions.paddingLeftOrTop + '"></div>').appendTo(document.body);
+		var wrapperLeftElem = $('<div style="padding-left:20px;padding-top:' + $.landlordsGlobalOptions.paddingLeftOrTop + '"></div>').appendTo(document.body);
+		var i, k, p, puke54Array = [];
+
+		for(k in $.landlordsGlobalOptions.puke54Object) {
+			puke54Array.push(k);
+		}
+
+		while(puke54Array.length > 0) {
+			if(puke54Array.length > 1) {
+				i = $.landlords.prototype.randInt(puke54Array.length);
+				k = puke54Array[i];
+				puke54Array.splice(i, 1);
+			} else {
+				k = puke54Array.pop();
+			}
+
+			p = $.landlordsGlobalOptions.puke54Object[k];
+
+			$('<div></div>').attr('title', k + ' - ' + p.title).css({
+				float: 'left',
+				width: $.landlordsGlobalOptions.puke54Options.width,
+				height: $.landlordsGlobalOptions.puke54Options.height,
+				overflow: 'hidden',
+				marginLeft: '-' + $.landlordsGlobalOptions.paddingLeftOrTop,
+				marginTop: '20px',
+				marginBottom: '10px',
+			}).css($.landlordsGlobalOptions.puke54BackgroundStyleArray[p.Y][p.X].normal).appendTo(wrapperElem).click(function() {
+				$(this).css('marginTop', $(this).css('marginTop') == '0px' ? '20px' : '0px');
+			});
+
+			$('<div></div>').attr('title', k + ' - ' + p.title).css({
+				width: $.landlordsGlobalOptions.puke54Options.height,
+				height: $.landlordsGlobalOptions.puke54Options.width,
+				overflow: 'hidden',
+				marginLeft: '-20px',
+				marginTop: '-' + $.landlordsGlobalOptions.paddingLeftOrTop,
+			}).css($.landlordsGlobalOptions.puke54BackgroundStyleArray[p.Y][p.X].r90).appendTo(wrapperLeftElem).click(function() {
+				$(this).css('marginLeft', $(this).css('marginLeft') == '0px' ? '-20px' : '0px');
+			}).clone().css({
+				position: 'relative',
+				zIndex: zIndex--
+			}).appendTo(wrapperRightElem).click(function() {
+				$(this).css('marginLeft', $(this).css('marginLeft') == '0px' ? '-20px' : '0px');
+			});
+		}
+
+		$('<div style="clear:both;"></div>').appendTo(wrapperElem);
+	};
 
 	/**
 	 * 斗地主游戏主函数 必须使用 new方法调用

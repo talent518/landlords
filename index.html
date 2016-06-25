@@ -12,60 +12,8 @@
 	</head>
 	<body>
 		<script type="text/javascript">
-		var zIndex = 54;
-		var PaddingLeftOrTop = '85px';
-		var wrapperElem = $('<div style="padding-left:' + PaddingLeftOrTop + ';"></div>').appendTo(document.body);
-		var wrapperRightElem = $('<div style="float:right;padding-left:20px;padding-top:' + PaddingLeftOrTop + '"></div>').appendTo(document.body);
-		var wrapperLeftElem = $('<div style="padding-left:20px;padding-top:' + PaddingLeftOrTop + '"></div>').appendTo(document.body);
-
-		(function() {
-			var i, k, p, puke54Array = [];
-
-			for(k in $.landlordsGlobalOptions.puke54Object) {
-				puke54Array.push(k);
-			}
-
-			while(puke54Array.length > 0) {
-				if(puke54Array.length > 1) {
-					i = $.landlords.prototype.randInt(puke54Array.length);
-					k = puke54Array[i];
-					puke54Array.splice(i, 1);
-				} else {
-					k = puke54Array.pop();
-				}
-
-				p = $.landlordsGlobalOptions.puke54Object[k];
-
-				$('<div></div>').attr('title', k + ' - ' + p.title).css({
-					float: 'left',
-					width: $.landlordsGlobalOptions.puke54Options.width,
-					height: $.landlordsGlobalOptions.puke54Options.height,
-					overflow: 'hidden',
-					marginLeft: '-' + PaddingLeftOrTop,
-					marginTop: '20px',
-					marginBottom: '10px',
-				}).css($.landlordsGlobalOptions.puke54BackgroundStyleArray[p.Y][p.X].normal).appendTo(wrapperElem).click(function() {
-					$(this).css('marginTop', $(this).css('marginTop') == '0px' ? '20px' : '0px');
-				});
-
-				$('<div></div>').attr('title', k + ' - ' + p.title).css({
-					width: $.landlordsGlobalOptions.puke54Options.height,
-					height: $.landlordsGlobalOptions.puke54Options.width,
-					overflow: 'hidden',
-					marginLeft: '-20px',
-					marginTop: '-' + PaddingLeftOrTop,
-				}).css($.landlordsGlobalOptions.puke54BackgroundStyleArray[p.Y][p.X].r90).appendTo(wrapperLeftElem).click(function() {
-					$(this).css('marginLeft', $(this).css('marginLeft') == '0px' ? '-20px' : '0px');
-				}).clone().css({
-					position: 'relative',
-					zIndex: zIndex--
-				}).appendTo(wrapperRightElem).click(function() {
-					$(this).css('marginLeft', $(this).css('marginLeft') == '0px' ? '-20px' : '0px');
-				});
-			}
-		})();
-
-		$('<div style="clear:both;"></div>').appendTo(wrapperElem);
+		$.landlordsDemo();
+		// $('<div></div>').appendTo(document.body).landlords();
 		</script>
 	</body>
 </html>
