@@ -74,6 +74,7 @@
 	var pukeXArray = ['A', 2, 3, 4, 5, 6, 7, 8, 9, 10, 'J', 'Q', 'K'];
 	// 右旋转牌的X偏移量
 	var r90PositionX = $.landlordsGlobalOptions.puke54Options.positionY - $.landlordsGlobalOptions.puke54Options.height;
+	var pointsString = '   3456789ABCDEFGH';
 
 	$.landlordsGlobalOptions.puke54BackgroundStyleArray = $.initArray([5,13], function(y, x) {
 		if(y == 4) {
@@ -82,15 +83,19 @@
 					title: '大王(big joker)',
 					Y: 4,
 					X: 0,
-					sort: 14
+					sort: 47,
+					points: pointsString.charAt(17)
 				};
+				// console.log($.landlordsGlobalOptions.puke54Object.BJ);
 			} else if(x == 1) {
 				$.landlordsGlobalOptions.puke54Object.LJ = {
 					title: '小王(little joker)',
 					Y: 4,
 					X: 1,
-					sort: 13
+					sort: 46,
+					points: pointsString.charAt(16)
 				};
+				// console.log($.landlordsGlobalOptions.puke54Object.LJ);
 			} else {
 				return false;
 			}
@@ -99,8 +104,10 @@
 				title: pukeTitleArray[y].replace('(', (x == 0 ? '尖儿' : pukeXArray[x]) + '(').replace(')', ' ' + (x == 0 ? 'Ace' : pukeXArray[x]) + ')'),
 				Y: y,
 				X: x,
-				sort: (x == 0 ? 11 : (x == 1 ? 12 : x - 2))
+				sort: (x == 0 ? 44 : (x == 1 ? 45 : (x - 2) * 4 + (3-y))),
+				points: x > 1 ? pointsString.charAt(x + 1) : pointsString.charAt(15 - x)
 			};
+			// console.log($.landlordsGlobalOptions.puke54Object[pukeYArray[y] + pukeXArray[x]]);
 		}
 
 		return {
@@ -267,20 +274,20 @@
 			self.playerElem = $('<div class="g-landlords-player" style="padding-left:' + $.landlordsGlobalOptions.paddingLeftOrTop + ';"></div>').appendTo(self.wrapperElem);
 			self.playerAvatarElem = $('<div class="g-landlords-icons g-landlords-avatar g-landlords-player-avatar"></div>').appendTo(self.wrapperElem);
 			self.playerNameElem = $('<div class="g-landlords-name g-landlords-player-name"><span class="mask"></span><a class="name" href="#" title="玩家一">玩家一</a></div>').appendTo(self.wrapperElem);
-			self.playerNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-player-number">0</div>').appendTo(self.wrapperElem);
-			self.playerTimerElem = $('<div class="g-landlords-icons g-landlords-timer g-landlords-player-timer">30</div>').appendTo(self.wrapperElem);
+			self.playerNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-player-number">0</div>').hide().appendTo(self.wrapperElem);
+			self.playerTimerElem = $('<div class="g-landlords-icons g-landlords-timer g-landlords-player-timer">30</div>').hide().appendTo(self.wrapperElem);
 
 			self.leftElem = $('<div class="g-landlords-left" style="padding-top:' + $.landlordsGlobalOptions.paddingLeftOrTopPercent + ';"></div>').appendTo(self.wrapperElem);
 			self.leftAvatarElem = $('<div class="g-landlords-icons g-landlords-avatar g-landlords-left-avatar"></div>').appendTo(self.wrapperElem);
 			self.leftNameElem = $('<div class="g-landlords-name g-landlords-left-name"><span class="mask"></span><a class="name" href="#" title="玩家三">玩家三</a></div>').appendTo(self.wrapperElem);
-			self.leftNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-left-number">0</div>').appendTo(self.wrapperElem);
-			self.leftTimerElem = $('<div class="g-landlords-icons g-landlords-timer g-landlords-left-timer">30</div>').appendTo(self.wrapperElem);
+			self.leftNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-left-number">0</div>').hide().appendTo(self.wrapperElem);
+			self.leftTimerElem = $('<div class="g-landlords-icons g-landlords-timer g-landlords-left-timer">30</div>').hide().appendTo(self.wrapperElem);
 
 			self.rightElem = $('<div class="g-landlords-right" style="padding-top:' + $.landlordsGlobalOptions.paddingLeftOrTopPercent + ';"></div>').appendTo(self.wrapperElem);
 			self.rightAvatarElem = $('<div class="g-landlords-icons g-landlords-avatar g-landlords-right-avatar"></div>').appendTo(self.wrapperElem);
 			self.rightNameElem = $('<div class="g-landlords-name g-landlords-right-name"><span class="mask"></span><a class="name" href="#" title="玩家二">玩家二</a></div>').appendTo(self.wrapperElem);
-			self.rightNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-right-number">0</div>').appendTo(self.wrapperElem);
-			self.rightTimerElem = $('<div class="g-landlords-icons g-landlords-timer g-landlords-right-timer">30</div>').appendTo(self.wrapperElem);
+			self.rightNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-right-number">0</div>').hide().appendTo(self.wrapperElem);
+			self.rightTimerElem = $('<div class="g-landlords-icons g-landlords-timer g-landlords-right-timer">30</div>').hide().appendTo(self.wrapperElem);
 
 			self.btnStartElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-start">开始</button>').appendTo(self.wrapperElem);
 			self.btnCallElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-call">叫地主</button>').hide().appendTo(self.wrapperElem);
@@ -296,16 +303,12 @@
 				$(this).removeClass('hover');
 			});
 
-			var callback = function() {
-				var downTimer = self.downTimer($('.g-landlords-timer', self.wrapperElem).show(), callback);
-				/*
-					// 提前结束倒计时
-					setTimeout(function() {
-						downTimer.clean();
-					}, self.randInt(10000)+10000);
-				*/
-			};
-			callback();
+			self.btnStartElem.click(function() {
+				self.btnStartElem.hide();
+				self.btnChangeElem.hide();
+
+				self.start();
+			});
 		},
 		
 		/**
@@ -376,28 +379,54 @@
 			self.playerArray = [];
 			self.leftArray = [];
 			self.rightArray = [];
+			self.cardsArray = [];
 
-			for(j=bj; j<ej; j++) {
-				i = self.randInt(puke54Array.length);
-				k = puke54Array[i];
+			j=bj;
+			var zIndex = 1;
+			var timer = setInterval(function() {
+				if(puke54Array.length == 1) {
+					k = puke54Array.pop();
+				} else {
+					i = self.randInt(puke54Array.length);
+					k = puke54Array[i];
 
-				puke54Array.splice(i, 1);
-
-				switch(j%3) {
-					case 0:
-						self.playerArray.push(k);
-						
-						break;
-					case 1:
-						self.rightArray.push(k);
-						break;
-					case 2:
-						self.leftArray.push(k);
-						break;
+					puke54Array.splice(i, 1);
 				}
-			}
 
-			self.cardsArray = puke54Array;
+				if(j>=ej-3) {
+					self.cardsArray.push(k);
+					self.renderCards(k);
+				} else {
+					switch(j%3) {
+						case 0:
+							self.playerArray.push(k);
+							self.renderPlayer(k);
+							self.resizePlayer();
+							self.playerNumberElem.show().text(self.playerArray.length);
+							break;
+						case 1:
+							self.rightArray.push(k);
+							self.renderRight(k, zIndex++);
+							self.rightNumberElem.show().text(self.rightArray.length);
+							break;
+						case 2:
+							self.leftArray.push(k);
+							self.renderLeft(k);
+							self.leftNumberElem.show().text(self.leftArray.length);
+							break;
+					}
+				}
+
+				j++;
+				if(j>=ej) {
+					clearInterval(timer);
+					self.sortRender();
+				}
+			}, 50);
+		},
+		sortRender: function() {
+			var self = this;
+
 			self.cardsArray.sort(function(a, b) {
 				return $.landlordsGlobalOptions.puke54Object[b].sort - $.landlordsGlobalOptions.puke54Object[a].sort;
 			});
@@ -410,7 +439,7 @@
 				return $.landlordsGlobalOptions.puke54Object[b].sort - $.landlordsGlobalOptions.puke54Object[a].sort;
 			});
 
-			self.rightArray.sort(function(b, a) {
+			self.rightArray.sort(function(a, b) {
 				return $.landlordsGlobalOptions.puke54Object[b].sort - $.landlordsGlobalOptions.puke54Object[a].sort;
 			});
 
@@ -441,49 +470,71 @@
 				self.rightAvatarElem.removeClass('g-landlords-right-avatar-woman');
 			}
 
-			$('<div style="clear:both;"></div>').appendTo(self.cardsElem).clone().appendTo(self.playerElem);
-
 			self.resizePlayer();
 		},
-		renderCards: function() {
+		renderCards: function(k) {
 			var self = this;
-			var i;
 
-			self.cardsElem.empty();
-			for(i=0; i<3; i++) {
-				self.getPukeElemForNormalPercent(self.cardsArray[i]).appendTo(self.cardsElem);
+			if(typeof(k) == 'undefined') {
+				var i;
+
+				self.cardsElem.empty();
+				for(i=0; i<3; i++) {
+					self.renderCards(self.cardsArray[i]);
+				}
+				$('<div style="clear:both;"></div>').appendTo(self.cardsElem)
+			} else {
+				self.getPukeElemForNormalPercent(k).appendTo(self.cardsElem);
 			}
 		},
-		renderPlayer: function() {
+		renderPlayer: function(k) {
 			var self = this;
-			var i;
 
-			self.playerElem.empty();
-			for(i=0; i<self.playerArray.length; i++) {
-				self.getPukeElemForNormal(self.playerArray[i]).appendTo(self.playerElem).click(function() {
+			if(typeof(k) == 'undefined') {
+				var i;
+
+				self.playerElem.empty();
+				for(i=0; i<self.playerArray.length; i++) {
+					self.renderPlayer(self.playerArray[i]);
+				}
+				$('<div style="clear:both;"></div>').appendTo(self.playerElem);
+			} else {
+				self.getPukeElemForNormal(k).appendTo(self.playerElem).click(function() {
 					$(this).css('marginTop', $(this).css('marginTop') == '0px' ? '-20px' : '0px');
 				});
 			}
 		},
-		renderLeft: function() {
+		renderLeft: function(k) {
 			var self = this;
-			var i;
 
-			self.leftElem.empty();
-			for(i=0; i<self.leftArray.length; i++) {
-				self.getPukeElemForR90Percent(self.leftArray[i]).appendTo(self.leftElem);
+			if(typeof(k) == 'undefined') {
+				var i;
+
+				self.leftElem.empty();
+				for(i=0; i<self.leftArray.length; i++) {
+					self.renderLeft(self.leftArray[i]);
+				}
+			} else {
+				self.getPukeElemForR90Percent(k).appendTo(self.leftElem);
 			}
 		},
-		renderRight: function() {
+		renderRight: function(k, zIndex) {
 			var self = this;
-			var i, zIndex = 20;
 
-			self.rightElem.empty();
-			for(i=0; i<self.rightArray.length; i++) {
-				self.getPukeElemForR90Percent(self.rightArray[i]).css({
+			if(typeof(k) == 'undefined') {
+				var i;
+				
+				zIndex = 1;
+
+				self.rightElem.empty();
+				for(i=0; i<self.rightArray.length; i++) {
+					self.renderRight(self.rightArray[i], zIndex++);
+				}
+			} else {
+				self.getPukeElemForR90Percent(k).css({
 					position: 'relative',
-					zIndex: zIndex--
-				}).appendTo(self.rightElem);
+					zIndex: zIndex
+				}).prependTo(self.rightElem);
 			}
 		},
 		resizePlayer: function() {
