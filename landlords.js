@@ -423,6 +423,26 @@
 					self.sortRender();
 				}
 			}, 50);
+
+			self.wrapperElem.addClass('started');
+
+			if(self.randInt(2)) {
+				self.playerAvatarElem.addClass('g-landlords-player-avatar-woman');
+			} else {
+				self.playerAvatarElem.removeClass('g-landlords-player-avatar-woman');
+			}
+
+			if(self.randInt(2)) {
+				self.leftAvatarElem.addClass('g-landlords-left-avatar-woman');
+			} else {
+				self.leftAvatarElem.removeClass('g-landlords-left-avatar-woman');
+			}
+
+			if(self.randInt(2)) {
+				self.rightAvatarElem.addClass('g-landlords-right-avatar-woman');
+			} else {
+				self.rightAvatarElem.removeClass('g-landlords-right-avatar-woman');
+			}
 		},
 		sortRender: function() {
 			var self = this;
@@ -451,25 +471,6 @@
 			self.renderPlayer();
 			self.renderLeft();
 			self.renderRight();
-
-			if(self.randInt(2)) {
-				self.playerAvatarElem.addClass('g-landlords-player-avatar-woman');
-			} else {
-				self.playerAvatarElem.removeClass('g-landlords-player-avatar-woman');
-			}
-
-			if(self.randInt(2)) {
-				self.leftAvatarElem.addClass('g-landlords-left-avatar-woman');
-			} else {
-				self.leftAvatarElem.removeClass('g-landlords-left-avatar-woman');
-			}
-
-			if(self.randInt(2)) {
-				self.rightAvatarElem.addClass('g-landlords-right-avatar-woman');
-			} else {
-				self.rightAvatarElem.removeClass('g-landlords-right-avatar-woman');
-			}
-
 			self.resizePlayer();
 		},
 		renderCards: function(k) {

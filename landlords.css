@@ -19,28 +19,31 @@
 
 .g-landlords-player{position:absolute;left:512px;bottom:50px;}
 .g-landlords-player .selected{margin-top:-20px;}
-.g-landlords-player-avatar{left:0px;bottom:50px;}
+.g-landlords-player-avatar{display:none;left:0px;bottom:50px;}
 .g-landlords-player-avatar-woman{background-position:0px -200px;}
-.g-landlords-player-name{left:0px;bottom:40px;}
+.g-landlords-player-name{display:none;left:0px;bottom:40px;}
 .g-landlords-player-number{right:70px;bottom:62px;}
 .g-landlords-player-timer{left:50%;bottom:250px;margin-left:-45px;}
 
 .g-landlords-left{position:absolute;left:200px;top:50px;}
-.g-landlords-left-avatar{left:0px;top:50px;}
+.g-landlords-left-avatar{display:none;left:0px;top:50px;}
 .g-landlords-left-avatar-woman{background-position:0px -200px;}
-.g-landlords-left-name{left:0px;top:230px;}
+.g-landlords-left-name{display:none;left:0px;top:230px;}
 .g-landlords-left-number{left:70px;top:270px;}
 .g-landlords-left-timer{left:280px;top:180px;}
 
 .g-landlords-right{position:absolute;right:200px;top:50px;}
-.g-landlords-right-avatar{right:0px;top:50px;background-position:-200px 0px;}
+.g-landlords-right-avatar{display:none;right:0px;top:50px;background-position:-200px 0px;}
 .g-landlords-right-avatar-woman{background-position:-200px -200px;}
-.g-landlords-right-name{right:0px;top:230px;}
+.g-landlords-right-name{display:none;right:0px;top:230px;}
 .g-landlords-right-number{right:70px;top:270px;z-index:50;}
 .g-landlords-right-timer{right:280px;top:180px;z-index:50;}
 
+.g-landlords.started .g-landlords-avatar{display:block;}
+.g-landlords.started .g-landlords-name{display:block;}
+
 .g-landlords-button{position:absolute;margin:0px;padding:0px;height:44px;overflow:hidden;border:none;text-indent:-1000px;cursor:pointer;}
-.g-landlords-btn-start{left:512px;top:256px;width:85px;margin-left:-95px;margin-top:-55px;background-position:0px -500px;}
+.g-landlords-btn-start{left:50%;top:50%;width:85px;margin-left:-95px;margin-top:-22px;background-position:0px -500px;}
 .g-landlords-btn-start.hover{background-position:-150px -500px;}
 .g-landlords-btn-start.disabled{background-position:-300px -500px !important;cursor:default;}
 .g-landlords-btn-call{left:50%;bottom:185px;width:128px;margin-left:-112px;background-position:0px -550px;}
@@ -58,7 +61,7 @@
 .g-landlords-btn-lead{left:512px;bottom:185px;width:85px;margin-left:61px;background-position:0px -750px;}
 .g-landlords-btn-lead.hover{background-position:-150px -750px;}
 .g-landlords-btn-lead.disabled{background-position:-300px -750px !important;cursor:default;}
-.g-landlords-btn-change{left:512px;top:256px;width:85px;margin-left:10px;margin-top:-55px;background-position:0px -800px;}
+.g-landlords-btn-change{left:50%;top:50%;width:85px;margin-left:10px;margin-top:-22px;background-position:0px -800px;}
 .g-landlords-btn-change.hover{background-position:-150px -800px;}
 .g-landlords-btn-change.disabled{background-position:-300px -800px !important;cursor:default;}
 
