@@ -484,24 +484,81 @@
 				}
 				$('<div style="clear:both;"></div>').appendTo(self.cardsElem)
 			} else {
-				self.getPukeElemForNormalPercent(k).appendTo(self.cardsElem);
+				return self.getPukeElemForNormalPercent(k).appendTo(self.cardsElem);
 			}
 		},
 		renderPlayer: function(k) {
 			var self = this;
 
 			if(typeof(k) == 'undefined') {
-				var i;
+				var i, isDowned = false;
 
 				self.playerElem.empty();
 				for(i=0; i<self.playerArray.length; i++) {
 					self.renderPlayer(self.playerArray[i]);
 				}
+
+				var X = 0;
+				var rects = [];
+				var calcSelectedElem = function(e) {
+					var pageX = e.clientX + $(window).scrollLeft();
+					var minX = Math.min(X, pageX), maxX = Math.max(X, pageX);
+
+					$.each(rects, function() {
+						if(minX <= this.x2 && this.x <= maxX) {
+							if(this.selected) {
+								this.elem.removeClass('selected');
+							} else {
+								this.elem.addClass('selected');
+							}
+						} else if(this.selected) {
+							this.elem.addClass('selected');
+						} else {
+							this.elem.removeClass('selected');
+						}
+					});
+				};
+
+				self.playerElem.children().click(function() {
+					$(this).toggleClass('selected');
+				}).mousedown(function(e) {
+					if(isDowned) {
+						return;
+					}
+
+					isDowned = true;
+					rects = [];
+					X = e.clientX + $(window).scrollLeft();
+
+					self.playerElem.children().each(function() {
+						var pos = $(this).offset();
+						rects.push({
+							elem: $(this),
+							selected: $(this).is('.selected'),
+							x: pos.left,
+							x2: pos.left + $.landlordsGlobalOptions.puke54Options.width - parseInt($.landlordsGlobalOptions.paddingLeftOrTop)
+						});
+					});
+
+					var i = rects.length - 1;
+					rects[i].x2 = rects[i].x + $.landlordsGlobalOptions.puke54Options.width;
+				}).mousemove(function(e) {
+					if(!isDowned) {
+						return;
+					}
+
+					calcSelectedElem(e);
+				});
+				$(window).unbind('mouseup.landlords').bind('mouseup.landlords', function(e) {
+					if(!isDowned) {
+						return;
+					}
+					isDowned = false;
+					calcSelectedElem(e);
+				});
 				$('<div style="clear:both;"></div>').appendTo(self.playerElem);
 			} else {
-				self.getPukeElemForNormal(k).appendTo(self.playerElem).click(function() {
-					$(this).css('marginTop', $(this).css('marginTop') == '0px' ? '-20px' : '0px');
-				});
+				return self.getPukeElemForNormal(k).appendTo(self.playerElem);
 			}
 		},
 		renderLeft: function(k) {
@@ -515,7 +572,7 @@
 					self.renderLeft(self.leftArray[i]);
 				}
 			} else {
-				self.getPukeElemForR90Percent(k).appendTo(self.leftElem);
+				return self.getPukeElemForR90Percent(k).appendTo(self.leftElem);
 			}
 		},
 		renderRight: function(k, zIndex) {
@@ -531,7 +588,7 @@
 					self.renderRight(self.rightArray[i], zIndex++);
 				}
 			} else {
-				self.getPukeElemForR90Percent(k).css({
+				return self.getPukeElemForR90Percent(k).css({
 					position: 'relative',
 					zIndex: zIndex
 				}).prependTo(self.rightElem);

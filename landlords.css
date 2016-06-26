@@ -1,4 +1,4 @@
-.g-landlords{position:relative;margin:0px auto;width:1024px;height:600px;overflow:hidden;background:url(images/background.jpg) no-repeat;}
+.g-landlords{position:relative;margin:0px auto;width:1024px;height:600px;overflow:hidden;background:url(images/background.jpg) no-repeat;-moz-user-select:none;-webkit-user-select:none;user-select:none;}
 
 .g-landlords-cards{position:absolute;left:512px;top:12px;margin-left:-42px;}
 
@@ -18,6 +18,7 @@
 .g-landlords-timer3{background-position:-300px -400px;}
 
 .g-landlords-player{position:absolute;left:512px;bottom:50px;}
+.g-landlords-player .selected{margin-top:-20px;}
 .g-landlords-player-avatar{left:0px;bottom:50px;}
 .g-landlords-player-avatar-woman{background-position:0px -200px;}
 .g-landlords-player-name{left:0px;bottom:40px;}
