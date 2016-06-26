@@ -255,6 +255,13 @@
 		init: function() {
 			var self = this;
 
+			if(self.isInited) {
+				alert('$.landlords.init() 不能重复执行！');
+				return;
+			}
+
+			self.isInited = true; // 已初始化过游戏对象
+
 			self.cardsElem = $('<div class="g-landlords-cards" style="padding-left:' + $.landlordsGlobalOptions.paddingLeftOrTopPercent + ';"></div>').appendTo(self.wrapperElem);
 
 			self.playerElem = $('<div class="g-landlords-player" style="padding-left:' + $.landlordsGlobalOptions.paddingLeftOrTop + ';"></div>').appendTo(self.wrapperElem);
@@ -275,27 +282,88 @@
 			self.rightNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-right-number">0</div>').appendTo(self.wrapperElem);
 			self.rightTimerElem = $('<div class="g-landlords-icons g-landlords-timer g-landlords-right-timer">30</div>').appendTo(self.wrapperElem);
 
-			self.btnStartElem = $('<button class="g-landlords-btn-start">开始</button>').appendTo(self.wrapperElem);
-			self.btnCallElem = $('<button class="g-landlords-btn-call">叫地主</button>').hide().appendTo(self.wrapperElem);
-			self.btnNotCallElem = $('<button class="g-landlords-btn-not-call">不叫</button>').hide().appendTo(self.wrapperElem);
-			self.btnNotLeadElem = $('<button class="g-landlords-btn-not-lead">不出</button>').appendTo(self.wrapperElem);
-			self.btnPromptElem = $('<button class="g-landlords-btn-prompt">提示</button>').appendTo(self.wrapperElem);
-			self.btnLeadElem = $('<button class="g-landlords-btn-lead">出牌</button>').appendTo(self.wrapperElem);
+			self.btnStartElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-start">开始</button>').appendTo(self.wrapperElem);
+			self.btnCallElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-call">叫地主</button>').hide().appendTo(self.wrapperElem);
+			self.btnNotCallElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-not-call">不叫</button>').hide().appendTo(self.wrapperElem);
+			self.btnNotLeadElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-not-lead">不出</button>').hide().appendTo(self.wrapperElem);
+			self.btnPromptElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-prompt">提示</button>').hide().appendTo(self.wrapperElem);
+			self.btnLeadElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-lead">出牌</button>').hide().appendTo(self.wrapperElem);
+			self.btnChangeElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-change">换桌</button>').appendTo(self.wrapperElem);
 
-			$('.g-landlords-name', self.wrapperElem).hover(function(){
+			$('.g-landlords-name,.g-landlords-button', self.wrapperElem).hover(function(){
 				$(this).addClass('hover');
 			},function(){
 				$(this).removeClass('hover');
 			});
 
-			var times = 30;
-			setInterval(function() {
-				times--;
-				if(!times) {
-					times = 30;
+			var callback = function() {
+				var downTimer = self.downTimer($('.g-landlords-timer', self.wrapperElem).show(), callback);
+				/*
+					// 提前结束倒计时
+					setTimeout(function() {
+						downTimer.clean();
+					}, self.randInt(10000)+10000);
+				*/
+			};
+			callback();
+		},
+		
+		/**
+		 * 倒计时(单位：秒)
+		 * 
+		 * @param elems jQuery 计时器显示的jQuery对象
+		 * @param callback Function 超时回调函数
+		 * @param seconds integer 倒计时的秒数
+		 */
+		downTimer: function(elems, callback, seconds) {
+			var self = this;
+			var timer = 0;
+			var retTimer;
+			var cleanCall = function(isTimeout) {
+				elems.hide();
+				clearTimeout(timer);
+				clearInterval(retTimer);
+				if(isTimeout && $.isFunction(callback)) {
+					callback.call(self);
 				}
-				$('.g-landlords-timer', self.wrapperElem).text(times);
+			};
+			
+			if(isNaN(seconds)) {
+				seconds = 30;
+			}
+			elems.text(seconds);
+
+			retTimer = setInterval(function() {
+				seconds--;
+				if(!seconds) {
+					cleanCall(true);
+					return;
+				}
+				if(seconds<=5) {
+					if(!timer) {
+						var i = 0;
+						timer = setInterval(function() {
+							if(i%2) {
+								elems.removeClass('g-landlords-timer3').addClass('g-landlords-timer2');
+							} else {
+								elems.removeClass('g-landlords-timer2').addClass('g-landlords-timer3');
+							}
+							i++;
+						}, 250);
+					}
+				} else {
+					elems.removeClass('g-landlords-timer2 g-landlords-timer3');
+					clearTimeout(timer);
+					timer = 0;
+				}
+				elems.text(seconds);
 			}, 1000);
+
+			return {
+				timer: retTimer,
+				itimer: timer,
+				clean: cleanCall
+			};
 		},
 		start: function() {
 			var self = this;
@@ -528,5 +596,14 @@
 		});
 		
 		return this;
+	};
+
+	$.fn.disabled = function(isDisabled) {
+		if(isDisabled) {
+			this.addClass('disabled');
+		} else {
+			this.removeClass('disabled');
+		}
+		return this.attr('disabled', isDisabled);
 	};
 })(jQuery);

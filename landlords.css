@@ -2,7 +2,7 @@
 
 .g-landlords-cards{position:absolute;left:512px;top:12px;margin-left:-42px;}
 
-.g-landlords-icons{background:url(images/icons.png) no-repeat;}
+.g-landlords-icons{background:transparent url(images/icons.png) left top no-repeat;}
 
 .g-landlords-avatar{position:absolute;width:200px;height:200px;overflow:hidden;}
 
@@ -14,6 +14,8 @@
 
 .g-landlords-number{position:absolute;width:61px;height:77px;overflow:hidden;background-position:0px -400px;color:white;text-align:center;line-height:77px;font-size:25px;font-weight:bold;font-family:'微软雅黑', 'Microsoft YaHei', '黑体', 'Arial Black', 'Arial';}
 .g-landlords-timer{position:absolute;width:90px;height:60px;overflow:hidden;padding-left:2px;padding-top:25px;background-position:-100px -400px;color:#F60;text-align:center;line-height:45px;font-size:25px;font-weight:bold;font-family:'微软雅黑', 'Microsoft YaHei', '黑体', 'Arial Black', 'Arial';}
+.g-landlords-timer2{background-position:-200px -400px;}
+.g-landlords-timer3{background-position:-300px -400px;}
 
 .g-landlords-player{position:absolute;left:512px;bottom:50px;}
 .g-landlords-player-avatar{left:0px;bottom:50px;}
@@ -36,10 +38,26 @@
 .g-landlords-right-number{right:70px;top:270px;z-index:50;}
 .g-landlords-right-timer{right:280px;top:180px;z-index:50;}
 
-.g-landlords button{position:absolute;margin:0px;padding:0px 10px;height:50px;background:white;border:1px #eee solid;border-radius:5px;line-height:50px;font-size:30px;font-weight:bold;font-family:'微软雅黑', 'Microsoft YaHei', '黑体', 'Arial Black', 'Arial';}
-.g-landlords .g-landlords-btn-start{left:512px;top:256px;margin-left:-41px;margin-top:-55px;}
-.g-landlords .g-landlords-btn-call{left:50%;bottom:185px;margin-left:-122px;}
-.g-landlords .g-landlords-btn-not-call{left:50%;bottom:185px;margin-left:10px;}
-.g-landlords .g-landlords-btn-not-lead{left:512px;bottom:185px;margin-left:-142px;}
-.g-landlords .g-landlords-btn-prompt{left:512px;bottom:185px;margin-left:-41px;}
-.g-landlords .g-landlords-btn-lead{left:512px;bottom:185px;margin-left:61px;}
+.g-landlords-button{position:absolute;margin:0px;padding:0px;height:44px;overflow:hidden;border:none;text-indent:-1000px;cursor:pointer;}
+.g-landlords-btn-start{left:512px;top:256px;width:85px;margin-left:-95px;margin-top:-55px;background-position:0px -500px;}
+.g-landlords-btn-start.hover{background-position:-150px -500px;}
+.g-landlords-btn-start.disabled{background-position:-300px -500px !important;cursor:default;}
+.g-landlords-btn-call{left:50%;bottom:185px;width:128px;margin-left:-112px;background-position:0px -550px;}
+.g-landlords-btn-call.hover{background-position:-150px -550px;}
+.g-landlords-btn-call.disabled{background-position:-300px -550px !important;cursor:default;}
+.g-landlords-btn-not-call{left:50%;bottom:185px;width:85px;margin-left:30px;background-position:0px -600px;}
+.g-landlords-btn-not-call.hover{background-position:-150px -600px;}
+.g-landlords-btn-not-call.disabled{background-position:-300px -600px !important;cursor:default;}
+.g-landlords-btn-not-lead{left:512px;bottom:185px;width:85px;margin-left:-142px;background-position:0px -650px;}
+.g-landlords-btn-not-lead.hover{background-position:-150px -650px;}
+.g-landlords-btn-not-lead.disabled{background-position:-300px -650px !important;cursor:default;}
+.g-landlords-btn-prompt{left:512px;bottom:185px;width:85px;margin-left:-41px;background-position:0px -700px;}
+.g-landlords-btn-prompt.hover{background-position:-150px -700px;}
+.g-landlords-btn-prompt.disabled{background-position:-300px -700px !important;cursor:default;}
+.g-landlords-btn-lead{left:512px;bottom:185px;width:85px;margin-left:61px;background-position:0px -750px;}
+.g-landlords-btn-lead.hover{background-position:-150px -750px;}
+.g-landlords-btn-lead.disabled{background-position:-300px -750px !important;cursor:default;}
+.g-landlords-btn-change{left:512px;top:256px;width:85px;margin-left:10px;margin-top:-55px;background-position:0px -800px;}
+.g-landlords-btn-change.hover{background-position:-150px -800px;}
+.g-landlords-btn-change.disabled{background-position:-300px -800px !important;cursor:default;}
+
