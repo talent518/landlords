@@ -500,10 +500,26 @@
 				}
 
 				var X = 0;
+				var Y = 0;
 				var rects = [];
+				var downElem = $([]);
+				var selectBoxElem = $([]);
 				var calcSelectedElem = function(e) {
 					var pageX = e.clientX + $(window).scrollLeft();
+					var pageY = e.clientY + $(window).scrollTop();
+
+					if(X == pageX && Y == pageY) {
+						downElem.toggleClass('selected');
+						return;
+					}
+
 					var minX = Math.min(X, pageX), maxX = Math.max(X, pageX);
+					var minY = Math.min(Y, pageY), maxY = Math.max(Y, pageY);
+
+					selectBoxElem.width(maxX-minX).height(maxY-minY).css({
+						left: minX + 'px',
+						top: minY + 'px'
+					});
 
 					$.each(rects, function() {
 						if(minX <= this.x2 && this.x <= maxX) {
@@ -520,9 +536,7 @@
 					});
 				};
 
-				self.playerElem.children().click(function() {
-					$(this).toggleClass('selected');
-				}).mousedown(function(e) {
+				self.playerElem.children().mousedown(function(e) {
 					if(isDowned) {
 						return;
 					}
@@ -530,6 +544,9 @@
 					isDowned = true;
 					rects = [];
 					X = e.clientX + $(window).scrollLeft();
+					Y = e.clientY + $(window).scrollTop();
+					downElem = $(this);
+					selectBoxElem = $('<div style="position:absolute;left:-100px;top:-100px;width:0px;height:0px;overflow:hidden;border:1px dotted gray;"></div>').appendTo(document.body);
 
 					self.playerElem.children().each(function() {
 						var pos = $(this).offset();
@@ -543,19 +560,20 @@
 
 					var i = rects.length - 1;
 					rects[i].x2 = rects[i].x + $.landlordsGlobalOptions.puke54Options.width;
-				}).mousemove(function(e) {
+				});
+				$(window).unbind('mousemove.landlords').bind('mousemove.landlords', function(e) {
 					if(!isDowned) {
 						return;
 					}
 
 					calcSelectedElem(e);
-				});
-				$(window).unbind('mouseup.landlords').bind('mouseup.landlords', function(e) {
+				}).unbind('mouseup.landlords').bind('mouseup.landlords', function(e) {
 					if(!isDowned) {
 						return;
 					}
 					isDowned = false;
 					calcSelectedElem(e);
+					selectBoxElem.remove();
 				});
 				$('<div style="clear:both;"></div>').appendTo(self.playerElem);
 			} else {
