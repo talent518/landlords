@@ -4,45 +4,42 @@
 
 .g-landlords-icons{background:transparent url(images/icons.png) left top no-repeat;}
 
-.g-landlords-avatar{position:absolute;width:200px;height:200px;overflow:hidden;}
+.g-landlords-avatar{display:none;position:absolute;width:200px;height:200px;overflow:hidden;}
 
-.g-landlords-name{position:absolute;margin:0 20px;width:160px;height:30px;}
+.g-landlords-name{display:none;position:absolute;margin:0 20px;width:160px;height:30px;}
 .g-landlords-name .mask{position:absolute;width:100%;height:100%;background:black;filter:alpha(opacity = 30);opacity:0.3;border-radius:5px}
 .g-landlords-name .name{position:absolute;width:100%;height:100%;overflow:hidden;line-height:30px;text-align:center;text-overflow:ellipsis;color:white;font-weight:bold;text-decoration:none;}
 .g-landlords-name.hover .mask{filter:alpha(opacity = 40);opacity:0.4;}
 .g-landlords-name.hover .name{color:#F60;}
 
-.g-landlords-number{position:absolute;width:61px;height:77px;overflow:hidden;background-position:0px -400px;color:white;text-align:center;line-height:77px;font-size:25px;font-weight:bold;font-family:'微软雅黑', 'Microsoft YaHei', '黑体', 'Arial Black', 'Arial';}
-.g-landlords-timer{position:absolute;width:90px;height:60px;overflow:hidden;padding-left:2px;padding-top:25px;background-position:-100px -400px;color:#F60;text-align:center;line-height:45px;font-size:25px;font-weight:bold;font-family:'微软雅黑', 'Microsoft YaHei', '黑体', 'Arial Black', 'Arial';}
+.g-landlords-number{display:none;position:absolute;width:61px;height:77px;overflow:hidden;background-position:0px -400px;color:white;text-align:center;line-height:77px;font-size:25px;font-weight:bold;font-family:'微软雅黑', 'Microsoft YaHei', '黑体', 'Arial Black', 'Arial';}
+.g-landlords-timer{display:none;position:absolute;width:90px;height:60px;overflow:hidden;padding-left:2px;padding-top:25px;background-position:-100px -400px;color:#F60;text-align:center;line-height:45px;font-size:25px;font-weight:bold;font-family:'微软雅黑', 'Microsoft YaHei', '黑体', 'Arial Black', 'Arial';}
 .g-landlords-timer2{background-position:-200px -400px;}
 .g-landlords-timer3{background-position:-300px -400px;}
 
 .g-landlords-player{position:absolute;left:512px;bottom:50px;}
 .g-landlords-player .selected{margin-top:-20px;}
-.g-landlords-player-avatar{display:none;left:0px;bottom:50px;}
+.g-landlords-player-avatar{left:0px;bottom:50px;}
 .g-landlords-player-avatar-woman{background-position:0px -200px;}
-.g-landlords-player-name{display:none;left:0px;bottom:40px;}
+.g-landlords-player-name{left:0px;bottom:40px;}
 .g-landlords-player-number{right:70px;bottom:62px;}
 .g-landlords-player-timer{left:50%;bottom:250px;margin-left:-45px;}
 
 .g-landlords-left{position:absolute;left:200px;top:50px;}
-.g-landlords-left-avatar{display:none;left:0px;top:50px;}
+.g-landlords-left-avatar{left:0px;top:50px;}
 .g-landlords-left-avatar-woman{background-position:0px -200px;}
-.g-landlords-left-name{display:none;left:0px;top:230px;}
+.g-landlords-left-name{left:0px;top:230px;}
 .g-landlords-left-number{left:70px;top:270px;}
 .g-landlords-left-timer{left:280px;top:180px;}
 
 .g-landlords-right{position:absolute;right:200px;top:50px;}
-.g-landlords-right-avatar{display:none;right:0px;top:50px;background-position:-200px 0px;}
+.g-landlords-right-avatar{right:0px;top:50px;background-position:-200px 0px;}
 .g-landlords-right-avatar-woman{background-position:-200px -200px;}
-.g-landlords-right-name{display:none;right:0px;top:230px;}
+.g-landlords-right-name{right:0px;top:230px;}
 .g-landlords-right-number{right:70px;top:270px;z-index:50;}
 .g-landlords-right-timer{right:280px;top:180px;z-index:50;}
 
-.g-landlords.started .g-landlords-avatar{display:block;}
-.g-landlords.started .g-landlords-name{display:block;}
-
-.g-landlords-button{position:absolute;margin:0px;padding:0px;height:44px;overflow:hidden;border:none;text-indent:-1000px;cursor:pointer;}
+.g-landlords-button{display:none;position:absolute;margin:0px;padding:0px;height:44px;overflow:hidden;border:none;outline:none;text-indent:-1000px;cursor:pointer;}
 .g-landlords-btn-start{left:50%;top:50%;width:85px;margin-left:-95px;margin-top:-22px;background-position:0px -500px;}
 .g-landlords-btn-start.hover{background-position:-150px -500px;}
 .g-landlords-btn-start.disabled{background-position:-300px -500px !important;cursor:default;}
@@ -65,3 +62,34 @@
 .g-landlords-btn-change.hover{background-position:-150px -800px;}
 .g-landlords-btn-change.disabled{background-position:-300px -800px !important;cursor:default;}
 
+.login-and-register-form{position:absolute;left:50%;top:50%;width:460px;height:310px;overflow:hidden;margin-left:-230px;margin-top:-155px;background-position:0px -860px;}
+.login-and-register-form span{position:absolute;left:49px;top:20px;z-index:1;width:120px;height:33px;overflow:hidden;cursor:pointer;text-indent:-1000px;}
+.login-and-register-form span.register{left:192px;}
+.login-and-register-form form{position:absolute;left:0px;top:0px;width:100%;height:100%;}
+.login-and-register-form input{position:absolute;left:176px;width:246px;height:36px;overflow:hidden;margin:0px;padding:0px 3px;border:none;border-radius:5px;outline:none;background:rgba(0,0,0,0.1);line-height:36px;font-size:25px;color:#ba4f04;}
+.login-and-register-form .username{top:81px;}
+.login-and-register-form .password{top:160px;}
+.login-and-register-form .repassword{top:237px;}
+.login-and-register-form button{display:inline-block;left:50%;width:170px;margin-left:-85px;}
+.login-and-register-form .login-btn{top:234px;background-position:0px -1575px;}
+.login-and-register-form .login-btn.hover{background-position:-200px -1575px;}
+.login-and-register-form .register-btn{top:312px;background-position:0px -1625px;}
+.login-and-register-form .register-btn.hover{background-position:-200px -1625px;}
+
+.login-and-register-form .repassword{display:none;}
+.login-and-register-form .register-btn{display:none;}
+
+.login-and-register-form.register{height:390px;margin-top:-195px;background-position:0px -1180px;}
+.login-and-register-form.register .repassword{display:inline-block;}
+.login-and-register-form.register .register-btn{display:inline-block;}
+.login-and-register-form.register .login-btn{display:none;}
+
+.g-landlords.logined .g-landlords-player-avatar{display:block;}
+.g-landlords.logined .g-landlords-player-name{display:block;}
+.g-landlords.logined .g-landlords-btn-start{display:block;}
+.g-landlords.logined .g-landlords-btn-change{display:block;}
+
+.g-landlords.started .g-landlords-avatar{display:block;}
+.g-landlords.started .g-landlords-name{display:block;}
+
+.g-landlords-loading{display:none;position:absolute;z-index:9999;height:58px;line-height:58px;overflow:hidden;padding:0px 0px 0px 40px;background:url(images/loading.gif) left center no-repeat;font-size:20px;font-weight:bold;color:#419639;}

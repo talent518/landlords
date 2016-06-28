@@ -222,7 +222,8 @@
 	// 游戏对象方法或默认属性的定义
 	$.landlords.prototype = {
 		options: {
-			isRobot: true
+			isRobot: false,
+			ajaxUrl: 'landlords.php'
 		},
 
 		wrapperElem: $([]), // 游戏的主容器
@@ -259,6 +260,8 @@
 		btnPromptElem: $([]), // 提示按钮
 		btnLeadElem: $([]), // 出牌按钮
 
+		isStarted: false, // 是否已开始游戏
+
 		init: function() {
 			var self = this;
 
@@ -269,32 +272,34 @@
 
 			self.isInited = true; // 已初始化过游戏对象
 
+			self.loginAndRegsiterForm();
+
 			self.cardsElem = $('<div class="g-landlords-cards" style="padding-left:' + $.landlordsGlobalOptions.paddingLeftOrTopPercent + ';"></div>').appendTo(self.wrapperElem);
 
 			self.playerElem = $('<div class="g-landlords-player" style="padding-left:' + $.landlordsGlobalOptions.paddingLeftOrTop + ';"></div>').appendTo(self.wrapperElem);
 			self.playerAvatarElem = $('<div class="g-landlords-icons g-landlords-avatar g-landlords-player-avatar"></div>').appendTo(self.wrapperElem);
 			self.playerNameElem = $('<div class="g-landlords-name g-landlords-player-name"><span class="mask"></span><a class="name" href="#" title="玩家一">玩家一</a></div>').appendTo(self.wrapperElem);
-			self.playerNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-player-number">0</div>').hide().appendTo(self.wrapperElem);
-			self.playerTimerElem = $('<div class="g-landlords-icons g-landlords-timer g-landlords-player-timer">30</div>').hide().appendTo(self.wrapperElem);
+			self.playerNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-player-number">0</div>').appendTo(self.wrapperElem);
+			self.playerTimerElem = $('<div class="g-landlords-icons g-landlords-timer g-landlords-player-timer">30</div>').appendTo(self.wrapperElem);
 
 			self.leftElem = $('<div class="g-landlords-left" style="padding-top:' + $.landlordsGlobalOptions.paddingLeftOrTopPercent + ';"></div>').appendTo(self.wrapperElem);
 			self.leftAvatarElem = $('<div class="g-landlords-icons g-landlords-avatar g-landlords-left-avatar"></div>').appendTo(self.wrapperElem);
 			self.leftNameElem = $('<div class="g-landlords-name g-landlords-left-name"><span class="mask"></span><a class="name" href="#" title="玩家三">玩家三</a></div>').appendTo(self.wrapperElem);
-			self.leftNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-left-number">0</div>').hide().appendTo(self.wrapperElem);
-			self.leftTimerElem = $('<div class="g-landlords-icons g-landlords-timer g-landlords-left-timer">30</div>').hide().appendTo(self.wrapperElem);
+			self.leftNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-left-number">0</div>').appendTo(self.wrapperElem);
+			self.leftTimerElem = $('<div class="g-landlords-icons g-landlords-timer g-landlords-left-timer">30</div>').appendTo(self.wrapperElem);
 
 			self.rightElem = $('<div class="g-landlords-right" style="padding-top:' + $.landlordsGlobalOptions.paddingLeftOrTopPercent + ';"></div>').appendTo(self.wrapperElem);
 			self.rightAvatarElem = $('<div class="g-landlords-icons g-landlords-avatar g-landlords-right-avatar"></div>').appendTo(self.wrapperElem);
 			self.rightNameElem = $('<div class="g-landlords-name g-landlords-right-name"><span class="mask"></span><a class="name" href="#" title="玩家二">玩家二</a></div>').appendTo(self.wrapperElem);
-			self.rightNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-right-number">0</div>').hide().appendTo(self.wrapperElem);
-			self.rightTimerElem = $('<div class="g-landlords-icons g-landlords-timer g-landlords-right-timer">30</div>').hide().appendTo(self.wrapperElem);
+			self.rightNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-right-number">0</div>').appendTo(self.wrapperElem);
+			self.rightTimerElem = $('<div class="g-landlords-icons g-landlords-timer g-landlords-right-timer">30</div>').appendTo(self.wrapperElem);
 
 			self.btnStartElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-start">开始</button>').appendTo(self.wrapperElem);
-			self.btnCallElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-call">叫地主</button>').hide().appendTo(self.wrapperElem);
-			self.btnNotCallElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-not-call">不叫</button>').hide().appendTo(self.wrapperElem);
-			self.btnNotLeadElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-not-lead">不出</button>').hide().appendTo(self.wrapperElem);
-			self.btnPromptElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-prompt">提示</button>').hide().appendTo(self.wrapperElem);
-			self.btnLeadElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-lead">出牌</button>').hide().appendTo(self.wrapperElem);
+			self.btnCallElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-call">叫地主</button>').appendTo(self.wrapperElem);
+			self.btnNotCallElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-not-call">不叫</button>').appendTo(self.wrapperElem);
+			self.btnNotLeadElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-not-lead">不出</button>').appendTo(self.wrapperElem);
+			self.btnPromptElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-prompt">提示</button>').appendTo(self.wrapperElem);
+			self.btnLeadElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-lead">出牌</button>').appendTo(self.wrapperElem);
 			self.btnChangeElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-change">换桌</button>').appendTo(self.wrapperElem);
 
 			$('.g-landlords-name,.g-landlords-button', self.wrapperElem).hover(function(){
@@ -305,9 +310,122 @@
 
 			self.btnStartElem.click(function() {
 				self.btnStartElem.hide();
-				self.btnChangeElem.hide();
 
 				self.start();
+			});
+
+			$(window).bind('beforeunload', function(e) {
+				if(self.isStarted) {
+					return '正在游戏中退出后由笨笨的机器代打，您还确定要退出吗？';
+				}
+			});
+
+			$(window).unload(function() {
+				if(!self.isStarted) {
+					return;
+				}
+
+				$.ajax({
+					global: false,
+					async: false,
+					url: self.options.ajaxUrl,
+					data: {action: 'unload'},
+					type: 'POST'
+				});
+			});
+		},
+
+		loginAndRegsiterForm: function() {
+			var self = this;
+
+			var formElem = $('<form class="g-landlords-icons login-and-register-form">' +
+				'<span class="login" title="用户登录">用户登录</span>' +
+				'<span class="register" title="用户注册">用户注册</span>' +
+
+				'<input class="username" name="username" type="text" value=""/>' +
+				'<input class="password" name="password" type="password" value=""/>' +
+				'<input class="repassword" name="repassword" type="password" value=""/>' +
+				'<button class="g-landlords-icons g-landlords-button login-btn">立即登录</button>' +
+				'<button class="g-landlords-icons g-landlords-button register-btn">立即登录</button>' +
+			'</form>').appendTo(self.wrapperElem);
+
+			$('span.login,span.register', formElem).click(function() {
+				if($(this).is('.login')) {
+					formElem.removeClass('register');
+				} else {
+					formElem.addClass('register');
+				}
+			});
+
+			$('button', formElem).hover(function(){
+				$(this).addClass('hover');
+			},function(){
+				$(this).removeClass('hover');
+			});
+
+			formElem.submit(function() {
+				var data = {
+					action: 'login',
+					username: $('.username', this).val(),
+					password: $('.password', this).val()
+				};
+				
+				if(data.username.length == 0) {
+					alert('帐号不能为空！');
+
+					$('.username', this).focus();
+
+					return false;
+				}
+				
+				if(data.password.length == 0) {
+					alert('密码不能为空！');
+
+					$('.password', this).focus();
+
+					return false;
+				}
+				
+				if(data.password.length < 6) {
+					alert('密码长度最短6位！');
+
+					$('.password', this).focus();
+
+					return false;
+				}
+
+				if($(this).is('.register')) {
+					data.repassword = $('.repassword', this).val();
+
+					if(data.repassword.length == 0) {
+						alert('密码不能为空！');
+
+						$('.repassword', this).focus();
+
+						return false;
+					}
+
+					if(data.password !== data.repassword) {
+						alert('密码与验密码不一至！');
+
+						$('.repassword', this).focus();
+
+						return false;
+					}
+
+					data.action = 'register';
+				}
+
+				$.post(self.options.ajaxUrl, data, function(json) {
+					if(json.status) {
+						alert($('button:visible', formElem).text() + '成功！');
+					} else {
+						alert($('button:visible', formElem).text() + '失败！');
+						console.log(json);
+					}
+				}, 'json');
+
+				return false;
 			});
 		},
 		
@@ -376,6 +494,7 @@
 				puke54Array.push(k);
 			}
 			
+			self.isStarted = true;
 			self.playerArray = [];
 			self.leftArray = [];
 			self.rightArray = [];
