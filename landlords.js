@@ -234,12 +234,14 @@
 		playerArray: [], // 主玩家牌的数组的索引
 		playerElem: $([]), // 主玩家容器
 		playerAvatarElem: $([]), // 主玩家头像
+		playerScoreElem: $([]), // 主玩家积分
 		playerNameElem: $([]), // 主玩家名字
 		playerTimerElem: $([]), // 主玩家等待计时器
 
 		leftArray: [], // 左玩家牌的数组的索引
 		leftElem: $([]), // 左玩家容器
 		leftAvatarElem: $([]), // 左玩家头像
+		leftScoreElem: $([]), // 左玩家积分
 		leftNameElem: $([]), // 左玩家名字
 		leftNumberElem: $([]), // 左玩家牌的个数
 		leftTimerElem: $([]), // 左玩家等待计时器
@@ -247,6 +249,7 @@
 		rightArray: [], // 右玩家牌的数组的索引
 		rightElem: $([]), // 右玩家容器
 		rightAvatarElem: $([]), // 右玩家头像
+		rightScoreElem: $([]), // 右玩家积分
 		rightNameElem: $([]), // 右玩家名字
 		rightNumberElem: $([]), // 右玩家牌的个数
 		rightTimerElem: $([]), // 右玩家等待计时器
@@ -260,6 +263,8 @@
 		btnPromptElem: $([]), // 提示按钮
 		btnLeadElem: $([]), // 出牌按钮
 
+		loadingElem: $([]), // Ajax加载图标
+
 		isStarted: false, // 是否已开始游戏
 
 		init: function() {
@@ -272,24 +277,33 @@
 
 			self.isInited = true; // 已初始化过游戏对象
 
+			self.loadingElem = $('<div class="g-landlords-loading g-landlords-shadow">加载中…</div>').appendTo(self.wrapperElem);
+			self.messageMaskElem = $('<div class="g-landlords-message-mask"></div>').appendTo(self.wrapperElem);
+			self.messageElem = $('<div class="g-landlords-message g-landlords-shadow"></div>').appendTo(self.wrapperElem);
+			self.messageCloseElem = $('<div class="g-landlords-icons g-close"></div>').appendTo(self.messageElem);
+			self.messageBodyElem = $('<div class="g-body"></div>').appendTo(self.messageElem);
+
 			self.loginAndRegsiterForm();
 
 			self.cardsElem = $('<div class="g-landlords-cards" style="padding-left:' + $.landlordsGlobalOptions.paddingLeftOrTopPercent + ';"></div>').appendTo(self.wrapperElem);
 
 			self.playerElem = $('<div class="g-landlords-player" style="padding-left:' + $.landlordsGlobalOptions.paddingLeftOrTop + ';"></div>').appendTo(self.wrapperElem);
 			self.playerAvatarElem = $('<div class="g-landlords-icons g-landlords-avatar g-landlords-player-avatar"></div>').appendTo(self.wrapperElem);
+			self.playerScoreElem = $('<div class="g-score"></div>').appendTo(self.playerAvatarElem);
 			self.playerNameElem = $('<div class="g-landlords-name g-landlords-player-name"><span class="mask"></span><a class="name" href="#" title="玩家一">玩家一</a></div>').appendTo(self.wrapperElem);
 			self.playerNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-player-number">0</div>').appendTo(self.wrapperElem);
 			self.playerTimerElem = $('<div class="g-landlords-icons g-landlords-timer g-landlords-player-timer">30</div>').appendTo(self.wrapperElem);
 
 			self.leftElem = $('<div class="g-landlords-left" style="padding-top:' + $.landlordsGlobalOptions.paddingLeftOrTopPercent + ';"></div>').appendTo(self.wrapperElem);
 			self.leftAvatarElem = $('<div class="g-landlords-icons g-landlords-avatar g-landlords-left-avatar"></div>').appendTo(self.wrapperElem);
+			self.leftScoreElem = $('<div class="g-score"></div>').appendTo(self.leftAvatarElem);
 			self.leftNameElem = $('<div class="g-landlords-name g-landlords-left-name"><span class="mask"></span><a class="name" href="#" title="玩家三">玩家三</a></div>').appendTo(self.wrapperElem);
 			self.leftNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-left-number">0</div>').appendTo(self.wrapperElem);
 			self.leftTimerElem = $('<div class="g-landlords-icons g-landlords-timer g-landlords-left-timer">30</div>').appendTo(self.wrapperElem);
 
 			self.rightElem = $('<div class="g-landlords-right" style="padding-top:' + $.landlordsGlobalOptions.paddingLeftOrTopPercent + ';"></div>').appendTo(self.wrapperElem);
 			self.rightAvatarElem = $('<div class="g-landlords-icons g-landlords-avatar g-landlords-right-avatar"></div>').appendTo(self.wrapperElem);
+			self.rightScoreElem = $('<div class="g-score"></div>').appendTo(self.rightAvatarElem);
 			self.rightNameElem = $('<div class="g-landlords-name g-landlords-right-name"><span class="mask"></span><a class="name" href="#" title="玩家二">玩家二</a></div>').appendTo(self.wrapperElem);
 			self.rightNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-right-number">0</div>').appendTo(self.wrapperElem);
 			self.rightTimerElem = $('<div class="g-landlords-icons g-landlords-timer g-landlords-right-timer">30</div>').appendTo(self.wrapperElem);
@@ -302,7 +316,7 @@
 			self.btnLeadElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-lead">出牌</button>').appendTo(self.wrapperElem);
 			self.btnChangeElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-change">换桌</button>').appendTo(self.wrapperElem);
 
-			$('.g-landlords-name,.g-landlords-button', self.wrapperElem).hover(function(){
+			$('.g-landlords-name,.g-landlords-button,.g-close', self.wrapperElem).hover(function(){
 				$(this).addClass('hover');
 			},function(){
 				$(this).removeClass('hover');
@@ -325,14 +339,10 @@
 					return;
 				}
 
-				$.ajax({
-					global: false,
-					async: false,
-					url: self.options.ajaxUrl,
-					data: {action: 'unload'},
-					type: 'POST'
-				});
+				self.post('unload', {}, function() {}, {async: false});
 			});
+
+			self.post('init');
 		},
 
 		loginAndRegsiterForm: function() {
@@ -345,8 +355,12 @@
 				'<input class="username" name="username" type="text" value=""/>' +
 				'<input class="password" name="password" type="password" value=""/>' +
 				'<input class="repassword" name="repassword" type="password" value=""/>' +
+				
 				'<button class="g-landlords-icons g-landlords-button login-btn">立即登录</button>' +
 				'<button class="g-landlords-icons g-landlords-button register-btn">立即登录</button>' +
+
+				'<div class="g-landlords-icons g-landlords-avatar selected" title="男"></div>' +
+				'<div class="g-landlords-icons g-landlords-avatar g-landlords-avatar-woman" title="女"></div>' +
 			'</form>').appendTo(self.wrapperElem);
 
 			$('span.login,span.register', formElem).click(function() {
@@ -357,15 +371,19 @@
 				}
 			});
 
-			$('button', formElem).hover(function(){
+			$('button,.g-landlords-avatar', formElem).hover(function(){
 				$(this).addClass('hover');
 			},function(){
 				$(this).removeClass('hover');
 			});
 
+			var avatarElems = $('.g-landlords-avatar', formElem).click(function() {
+				avatarElems.removeClass('selected');
+				$(this).addClass('selected');
+			});
+
 			formElem.submit(function() {
-				var data = {
-					action: 'login',
+				var action = 'login', data = {
 					username: $('.username', this).val(),
 					password: $('.password', this).val()
 				};
@@ -413,19 +431,110 @@
 						return false;
 					}
 
-					data.action = 'register';
+					data.isWoman = $('.g-landlords-avatar-woman.selected', formElem).size();
+
+					action = 'register';
 				}
 
-				$.post(self.options.ajaxUrl, data, function(json) {
+				self.post(action, data, function(json) {
 					if(json.status) {
-						alert($('button:visible', formElem).text() + '成功！');
+						self.message($('button:visible', formElem).text() + '成功！', 0, function() {
+							self.post('init');
+						});
 					} else {
-						alert($('button:visible', formElem).text() + '失败！');
-						console.log(json);
+						self.message($('button:visible', formElem).text() + '失败！', 0, 1);
 					}
-				}, 'json');
+				});
 
 				return false;
+			});
+		},
+
+		message: function(cont, isHtml, isClosable) {
+			var self = this;
+
+			self.messageCloseElem.unbind('click');
+			if(isClosable) {
+				self.messageCloseElem.click(function() {
+					self.messageMaskElem.hide();
+					self.messageElem.hide();
+
+					if($.isFunction(isClosable)) {
+						isClosable.call(self);
+					}
+				});
+				self.messageCloseElem.show();
+			} else {
+				self.messageCloseElem.hide();
+			}
+
+			if(isHtml) {
+				self.messageBodyElem.html(cont);
+			} else {
+				self.messageBodyElem.text(cont);
+			}
+
+			self.messageElem.show().css({
+				left: '0px',
+				top: '0px',
+				visibility: 'hidden'
+			});
+
+			setTimeout(function() {
+				self.messageMaskElem.show();
+				self.messageElem.css({
+					left: '50%',
+					top: '50%',
+					marginLeft: -self.messageElem.outerWidth() / 2 + 'px',
+					marginTop: -self.messageElem.outerHeight() / 2 + 'px',
+					visibility: 'visible'
+				});
+			}, 10);
+		},
+
+		post: function(action, data, callback, settings) {
+			var self = this;
+
+			if($.isFunction(data)) {
+				settings = callback;
+				callback = data;
+				data = {};
+			}
+
+			if(!$.isFunction(callback)) {
+				callback = function(json) {
+					if(typeof(json.callback) === 'string') {
+						json.callback = new Function('json', json.callback);
+						json.callback.call(self, json);
+					}
+				};
+				settings = {};
+			}
+
+			self.loadingElem.show();
+
+			$.ajax({
+				global: false,
+				url: self.options.ajaxUrl,
+				data: $.extend(true, {action: action}, data),
+				type: 'POST',
+				success: function(response) {
+					try {
+						var json = ($.inArray('json', this.dataTypes) > -1 ? response : $.parseJSON(response));
+						if(typeof(json.eval) === 'string') {
+							callback = new Function('json', json.eval);
+						}
+						callback.call(self, json);
+					} catch (e) {
+						self.message(response, $.inArray('html', this.dataTypes) > -1);
+					}
+				},
+				error: function(xhr) {
+					self.message(xhr.responseText);
+				},
+				complete: function() {
+					self.loadingElem.hide();
+				}
 			});
 		},
 		

@@ -70,7 +70,8 @@ CREATE TABLE `desks` (
   `cDateline` int(10) NOT NULL DEFAULT '0' COMMENT '玩家C占座时间戳',
   `cTime` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '玩家C占座时间',
   `cards` varchar(10) DEFAULT NULL COMMENT '底牌',
-  PRIMARY KEY (`deskId`)
+  PRIMARY KEY (`deskId`),
+  KEY `players` (`players`,`deskId`)
 ) ENGINE=MyISAM AUTO_INCREMENT=51 DEFAULT CHARSET=utf8 MIN_ROWS=50 COMMENT='牌桌主表';
 
 /*Data for the table `desks` */
@@ -107,12 +108,14 @@ CREATE TABLE `users` (
   `deskId` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '桌ID',
   `deskPosition` enum('a','b','c') DEFAULT NULL COMMENT '桌位',
   `scores` int(11) unsigned NOT NULL COMMENT '积分数',
+  `isWoman` tinyint(1) unsigned NOT NULL COMMENT '是否女性',
   `dateline` int(10) NOT NULL COMMENT '注册时间戳',
   `createTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '注册时间',
   `lastLoginDateline` int(10) DEFAULT NULL COMMENT '最后登录时间戳',
   `lastLoginTime` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '最后登录时间',
   PRIMARY KEY (`uid`),
-  UNIQUE KEY `username` (`username`)
+  UNIQUE KEY `username` (`username`),
+  KEY `username_password` (`username`,`password`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='用户主表';
 
 /*Data for the table `users` */

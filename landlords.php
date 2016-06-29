@@ -1,38 +1,62 @@
 <?php
 header('Content-Type: text/paint; charset=utf-8');
 
+define('TIMESTAMP', microtime(true));
+
 try {
 	$pdo=new PDO('mysql:host=localhost;dbname=landlords', 'root', '123456');
 }catch(PDOException $e) {
-    echo 'PDO-MySQL连接错误 : ',$e->getMessage();
+    echo 'PDO-MySQL连接错误 : ', $e->getMessage();
     exit;
 }
 
 $pdo->exec('SET NAMES \'utf8\'');
 
 if(isset($_POST['action']) && function_exists($action = 'action' . ucfirst($_POST['action']))) {
-	@header('Content-Type: application/json; charset=utf-8');
-
 	session_start();
 
-	$isNeedLogin = ($action === 'actionLogin' || $action === 'actionRegister');
+	$isNeedLogin = ($action !== 'actionLogin' && $action !== 'actionRegister');
 	$isLogined = isset($_SESSION['landlords']);
 
-	if($isNeedLogin && $isLogined) {
-		exit('已登录过！');
+	if(!$isNeedLogin && $isLogined) {
+		renderJson(array(
+			'msg' => '已登录过！',
+			'addClass' => 'logined',
+			'eval' => 'var self=this;this.message(json.msg, 0, function() {self.wrapperElem.addClass(json.addClass);});'
+		));
 	}
 
-	if(!$isNeedLogin && !$isLogined) {
-		exit('请先登录！');
+	if($isNeedLogin && !$isLogined) {
+		renderJson($action === 'actionInit' ? '' : array(
+			'msg' => '请先登录！',
+			'removeClass' => 'logined started',
+			'eval' => 'var self=this;this.message(json.msg, 0, function() {self.wrapperElem.removeClass(json.removeClass)});'
+		));
 	}
 
 	if($isLogined) {
+		if($_SESSION['regenerateDateline'] + 300 < TIMESTAMP) {
+			session_regenerate_id(true);
+
+			$_SESSION['regenerateDateline'] = TIMESTAMP;
+		}
 		$_POST = array_merge($_POST, $_SESSION['landlords']);
 	}
 
-	exit(json_encode(runFunction($action, $_POST)));
+	try {
+		renderJson(runFunction($action, $_POST));
+	} catch(Exception $e) {
+		echo 'Error: ', $e->getMessage(), PHP_EOL;
+		exit($e->getTraceAsString());
+	}
 } else {
 	exit('无效的请求！');
+}
+
+function renderJson($json) {
+	@header('Content-Type: application/json; charset=utf-8');
+
+	exit(json_encode($json));
 }
 
 function prepare($sql, array $params = array()) {
@@ -676,12 +700,13 @@ function actionLogin($username, $password) {
 		);
 	}
 
-	$sql = 'SELECT uid, username, deskId, deskPosition, scores FROM users WHERE `username` = ? AND `password` = MD5(CONCAT(md5(?), salt))';
+	$sql = 'SELECT uid, username, deskId, deskPosition, scores, isWoman FROM users WHERE `username` = ? AND `password` = MD5(CONCAT(md5(?), salt))';
 	$params = array(
 		$username,
 		$password
 	);
 
+	$_SESSION['regenerateDateline'] = TIMESTAMP;
 	$_SESSION['landlords'] = prepare($sql, $params)->fetch(PDO::FETCH_ASSOC);
 
 	return array(
@@ -689,14 +714,176 @@ function actionLogin($username, $password) {
 	);
 }
 
+// 用户退出
 function actionLogout() {
 	$landlords = $_SESSION['landlords'];
 
 	unset($_SESSION['landlords']);
 
-	return $landlords;
+	return array(
+		'removeClass' => 'logined started',
+		'eval' => 'this.wrapperElem.removeClass(json.removeClass).find("[style]").removeAttr("style");'
+	);
 }
 
+// 游戏初始化
+function actionInit($uid, $username, $deskId, $deskPosition, $scores, $isWoman) {
+	$isPlaying = false;
+
+	$eval = <<<EOD
+var self = this;
+
+self.wrapperElem.addClass('logined');
+
+$('.name', self.playerNameElem).attr('title', json.username).text(json.username);
+self.playerScoreElem.text(json.scores);
+if(json.isWoman) {
+	self.playerAvatarElem.addClass('g-landlords-avatar-woman');
+}
+EOD;
+
+	if($deskId) {
+		$sql = 'SELECT * FROM desks WHERE deskId=?';
+		$params = array($deskId);
+
+		extract(prepare($sql, $params)->fetch(PDO::FETCH_ASSOC));
+
+		if($aUid && $aUid !== $uid) {
+			$sql = 'SELECT username, scores, isWoman FROM users WHERE uid=?';
+			$params = array($aUid);
+			list($aUsername, $aScores, $aIsWoman) = prepare($sql, $params)->fetch(PDO::FETCH_NUM);
+		}
+
+		if($bUid && $bUid !== $uid) {
+			$sql = 'SELECT username, scores, isWoman FROM users WHERE uid=?';
+			$params = array($bUid);
+			list($bUsername, $bScores, $bIsWoman) = prepare($sql, $params)->fetch(PDO::FETCH_NUM);
+		}
+
+		if($cUid && $cUid !== $uid) {
+			$sql = 'SELECT username, scores, isWoman FROM users WHERE uid=?';
+			$params = array($cUid);
+			list($cUsername, $cScores, $cIsWoman) = prepare($sql, $params)->fetch(PDO::FETCH_NUM);
+		}
+
+		$eval .= PHP_EOL;
+		$eval .= PHP_EOL;
+
+		$eval .= <<<EOD
+if(json.aUid === json.uid) {
+	if(json.bUid) {
+		self.rightAvatarElem.show();
+		self.rightNameElem.show();
+
+		$('.name', self.rightNameElem).attr('title', json.bUsername).text(json.bUsername);
+		self.rightScoreElem.text(json.bScores);
+
+		if(json.bIsWoman) {
+			self.rightAvatarElem.addClass('g-landlords-avatar-woman');
+		} else {
+			self.rightAvatarElem.removeClass('g-landlords-avatar-woman');
+		}
+	}
+	if(json.cUid) {
+		self.leftAvatarElem.show();
+		self.leftNameElem.show();
+
+		$('.name', self.leftNameElem).attr('title', json.cUsername).text(json.cUsername);
+		self.leftScoreElem.text(json.cScores);
+
+		if(json.cIsWoman) {
+			self.leftAvatarElem.addClass('g-landlords-avatar-woman');
+		} else {
+			self.leftAvatarElem.removeClass('g-landlords-avatar-woman');
+		}
+	}
+} else if(json.bUid === json.uid) {
+	if(json.cUid) {
+		self.rightAvatarElem.show();
+		self.rightNameElem.show();
+
+		$('.name', self.rightNameElem).attr('title', json.cUsername).text(json.cUsername);
+		self.rightScoreElem.text(json.cScores);
+
+		if(json.cIsWoman) {
+			self.rightAvatarElem.addClass('g-landlords-avatar-woman');
+		} else {
+			self.rightAvatarElem.removeClass('g-landlords-avatar-woman');
+		}
+	}
+	if(json.aUid) {
+		self.leftAvatarElem.show();
+		self.leftNameElem.show();
+
+		$('.name', self.leftNameElem).attr('title', json.aUsername).text(json.aUsername);
+		self.leftScoreElem.text(json.aScores);
+
+		if(json.aIsWoman) {
+			self.leftAvatarElem.addClass('g-landlords-avatar-woman');
+		} else {
+			self.leftAvatarElem.removeClass('g-landlords-avatar-woman');
+		}
+	}
+} else {
+	if(json.aUid) {
+		self.rightAvatarElem.show();
+		self.rightNameElem.show();
+
+		$('.name', self.rightNameElem).attr('title', json.aUsername).text(json.aUsername);
+		self.rightScoreElem.text(json.aScores);
+
+		if(json.aIsWoman) {
+			self.rightAvatarElem.addClass('g-landlords-avatar-woman');
+		} else {
+			self.rightAvatarElem.removeClass('g-landlords-avatar-woman');
+		}
+	}
+	if(json.bUid) {
+		self.leftAvatarElem.show();
+		self.leftNameElem.show();
+
+		$('.name', self.leftNameElem).attr('title', json.bUsername).text(json.bUsername);
+		self.leftScoreElem.text(json.bScores);
+
+		if(json.bIsWoman) {
+			self.leftAvatarElem.addClass('g-landlords-avatar-woman');
+		} else {
+			self.leftAvatarElem.removeClass('g-landlords-avatar-woman');
+		}
+	}
+}
+if(json.{$deskPosition}GotReady) {
+	self.isStarted = true;
+	self.wrapperElem.addClass('started');
+}
+EOD;
+
+		unset($sql, $params);
+	}
+
+	unset($deskId);
+
+	$ret = get_defined_vars();
+
+	foreach($ret as $k => $v) {
+		if(is_numeric($v)) {
+			$ret[$k] = $v + 0;
+		}
+	}
+
+	return $ret;
+}
+
+// 游戏的准备或开始
 function actionStart($uid, $username, $deskId, $deskPosition, $scores) {
-	return get_defined_vars();
+	if($deskId) {
+		$sql = 'UPDATE desks SET ' . $deskPosition . 'GotReady=1 WHERE deskId=?';
+		$params = array($deskId);
+		prepare($sql, $params);
+	} else {
+		$sql = 'SELECT * FROM desks WHERE players<3 ORDER BY deskId';
+		$deskRow = prepare($sql)->fetchObject();
+	}
+
+	return $deskRow;
 }
