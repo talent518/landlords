@@ -1,6 +1,8 @@
 <?php
 header('Content-Type: text/paint; charset=utf-8');
 
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE & ~E_WARNING & ~E_STRICT);
+
 define('TIMESTAMP', microtime(true));
 
 try {
@@ -16,7 +18,7 @@ if(isset($_POST['action']) && function_exists($action = 'action' . ucfirst($_POS
 	session_start();
 
 	$isNeedLogin = ($action !== 'actionLogin' && $action !== 'actionRegister');
-	$isLogined = isset($_SESSION['landlords']);
+	$isLogined = isset($_SESSION['landlords']) && is_array($_SESSION['landlords']);
 
 	if(!$isNeedLogin && $isLogined) {
 		renderJson(array(
@@ -44,8 +46,13 @@ if(isset($_POST['action']) && function_exists($action = 'action' . ucfirst($_POS
 	}
 
 	try {
-		renderJson(runFunction($action, $_POST));
+		$pdo->beginTransaction();
+		$json = runFunction($action, $_POST);
+		$pdo->commit();
+
+		renderJson($json);
 	} catch(Exception $e) {
+		$pdo->rollBack();
 		echo 'Error: ', $e->getMessage(), PHP_EOL;
 		exit($e->getTraceAsString());
 	}
@@ -709,8 +716,14 @@ function actionLogin($username, $password) {
 	$_SESSION['regenerateDateline'] = TIMESTAMP;
 	$_SESSION['landlords'] = prepare($sql, $params)->fetch(PDO::FETCH_ASSOC);
 
+	if($_SESSION['landlords']) {
+		$sql = 'UPDATE users SET lastLoginDateline=UNIX_TIMESTAMP(), lastLoginTime=NOW() WHERE uid=?';
+		$params = array($_SESSION['landlords']['uid']);
+		prepare($sql, $params);
+	}
+
 	return array(
-		'status'=>true
+		'status'=>!!$_SESSION['landlords']
 	);
 }
 
@@ -727,7 +740,7 @@ function actionLogout() {
 }
 
 // 游戏初始化
-function actionInit($uid, $username, $deskId, $deskPosition, $scores, $isWoman) {
+function actionInit($uid, $username, $deskId, $deskPosition, $scores, $isWoman, $action, $isTimer = false) {
 	$isPlaying = false;
 
 	$eval = <<<EOD
@@ -766,11 +779,56 @@ EOD;
 			list($cUsername, $cScores, $cIsWoman) = prepare($sql, $params)->fetch(PDO::FETCH_NUM);
 		}
 
+		if(!$isPlaying && $players == 3) {
+			$isPlaying = 1;
+			$pukes = array('LJ');
+			foreach(array('H', 'D', 'C', 'S') as $k1) {
+				foreach(array('A', 2, 3, 4, 5, 6, 7, 8, 9, 10, 'J', 'Q', 'K') as $k2) {
+					$pukes[] = $k1 . $k2;
+				}
+			}
+			$pukes[] = 'BJ';
+			shuffle($pukes);
+
+			$aCards = $bCards = $cCards = array();
+
+			for($i = 0; $i < 51; $i++) {
+				switch($i % 3) {
+					case 0:
+						$aCards[] = array_shift($pukes);
+						break;
+					case 1:
+						$bCards[] = array_shift($pukes);
+						break;
+					case 2:
+						$cCards[] = array_shift($pukes);
+						break;
+				}
+			}
+
+			$cards = array_values($pukes);
+
+			$aCards = implode(',', $aCards);
+			$bCards = implode(',', $bCards);
+			$cCards = implode(',', $cCards);
+			$cards = implode(',', $pukes);
+
+			unset($pukes, $i, $k1, $k2);
+
+			$sql = 'UPDATE desks SET isPlaying=1, aCards=?, bCards=?, cCards=?, cards=? WHERE deskId=?';
+			$params = array($aCards, $bCards, $cCards, $cards, $deskId);
+			prepare($sql, $params);
+		}
+
 		$eval .= PHP_EOL;
 		$eval .= PHP_EOL;
 
 		$eval .= <<<EOD
 if(json.aUid === json.uid) {
+	if(json.aCards) {
+		self.playerArray = json.aCards.split(',');
+	}
+
 	if(json.bUid) {
 		self.rightAvatarElem.show();
 		self.rightNameElem.show();
@@ -782,6 +840,10 @@ if(json.aUid === json.uid) {
 			self.rightAvatarElem.addClass('g-landlords-avatar-woman');
 		} else {
 			self.rightAvatarElem.removeClass('g-landlords-avatar-woman');
+		}
+
+		if(json.bCards) {
+			self.rightArray = json.bCards.split(',');
 		}
 	}
 	if(json.cUid) {
@@ -796,8 +858,16 @@ if(json.aUid === json.uid) {
 		} else {
 			self.leftAvatarElem.removeClass('g-landlords-avatar-woman');
 		}
+
+		if(json.cCards) {
+			self.leftArray = json.cCards.split(',');
+		}
 	}
 } else if(json.bUid === json.uid) {
+	if(json.bCards) {
+		self.playerArray = json.bCards.split(',');
+	}
+
 	if(json.cUid) {
 		self.rightAvatarElem.show();
 		self.rightNameElem.show();
@@ -809,6 +879,10 @@ if(json.aUid === json.uid) {
 			self.rightAvatarElem.addClass('g-landlords-avatar-woman');
 		} else {
 			self.rightAvatarElem.removeClass('g-landlords-avatar-woman');
+		}
+
+		if(json.cCards) {
+			self.rightArray = json.cCards.split(',');
 		}
 	}
 	if(json.aUid) {
@@ -823,8 +897,16 @@ if(json.aUid === json.uid) {
 		} else {
 			self.leftAvatarElem.removeClass('g-landlords-avatar-woman');
 		}
+
+		if(json.aCards) {
+			self.leftArray = json.aCards.split(',');
+		}
 	}
 } else {
+	if(json.cCards) {
+		self.playerArray = json.cCards.split(',');
+	}
+
 	if(json.aUid) {
 		self.rightAvatarElem.show();
 		self.rightNameElem.show();
@@ -836,6 +918,10 @@ if(json.aUid === json.uid) {
 			self.rightAvatarElem.addClass('g-landlords-avatar-woman');
 		} else {
 			self.rightAvatarElem.removeClass('g-landlords-avatar-woman');
+		}
+
+		if(json.aCards) {
+			self.rightArray = json.aCards.split(',');
 		}
 	}
 	if(json.bUid) {
@@ -850,13 +936,48 @@ if(json.aUid === json.uid) {
 		} else {
 			self.leftAvatarElem.removeClass('g-landlords-avatar-woman');
 		}
+
+		if(json.bCards) {
+			self.leftArray = json.bCards.split(',');
+		}
 	}
 }
+
+if(json.cards) {
+	self.cardsArray = json.cards.split(',');
+}
+
 if(json.{$deskPosition}GotReady) {
 	self.isStarted = true;
 	self.wrapperElem.addClass('started');
+	self.btnStartElem.disabled(true);
+	self.btnChangeElem.disabled(false);
+} else {
+	self.isStarted = false;
+	self.wrapperElem.removeClass('started');
+	self.btnStartElem.disabled(false);
+	self.btnChangeElem.disabled(true);
 }
 EOD;
+
+		if($isPlaying) {
+			$eval .= <<<EOD
+clearTimeout(self.timer);
+
+self.btnStartElem.hide();
+self.btnChangeElem.hide();
+self.btnLogoutElem.hide();
+self.start();
+EOD;
+		} elseif($action === 'start' || $action === 'change' || $isTimer) {
+			$eval .= <<<EOD
+clearTimeout(self.timer);
+
+self.timer = setTimeout(function() {
+	self.post('init', {isTimer:1});
+}, 1000);
+EOD;
+		}
 
 		unset($sql, $params);
 	}
@@ -875,15 +996,72 @@ EOD;
 }
 
 // 游戏的准备或开始
-function actionStart($uid, $username, $deskId, $deskPosition, $scores) {
+function actionStart($uid, $username, $deskId, $deskPosition, $scores, $notDeskId = 0) {
 	if($deskId) {
-		$sql = 'UPDATE desks SET ' . $deskPosition . 'GotReady=1 WHERE deskId=?';
+		$sql = 'UPDATE desks SET ' . $deskPosition . 'GotReady=1, ' . $deskPosition . 'Dateline=UNIX_TIMESTAMP(), ' . $deskPosition . 'Time=NOW() WHERE deskId=?';
 		$params = array($deskId);
 		prepare($sql, $params);
 	} else {
-		$sql = 'SELECT * FROM desks WHERE players<3 ORDER BY deskId';
-		$deskRow = prepare($sql)->fetchObject();
+		$sql = 'SELECT * FROM desks WHERE ' . ($notDeskId ? 'deskId<>? AND ' : null) . 'players<3 ORDER BY players DESC, deskId';
+
+		$deskObj = prepare($sql, $notDeskId ? array($notDeskId) : array())->fetchObject();
+
+		$deskId = $deskObj->deskId;
+
+		$deskPosition = null;
+		foreach(array('a', 'b', 'c') as $k) {
+			$key = $k . 'Uid';
+			if(!$deskObj->$key) {
+				$deskPosition = $k;
+				break;
+			}
+		}
+
+		if(!$deskPosition) {
+			return array(
+				'eval' => 'this.message("开始游戏时由于冲突而导致失败！")'
+			);
+		}
+
+		$sql = 'UPDATE desks SET players=players+1, ' . $deskPosition . 'Uid=?, ' . $deskPosition . 'GotReady=1, ' . $deskPosition . 'Dateline=UNIX_TIMESTAMP(), ' . $deskPosition . 'Time=NOW() WHERE deskId=?';
+		$params = array($uid, $deskId);
+		prepare($sql, $params);
+
+		$sql = 'UPDATE users SET deskId=?, deskPosition=? WHERE uid=?';
+		$params = array($deskId, $deskPosition, $uid);
+		prepare($sql, $params);
+
+		$_SESSION['landlords']['deskId'] = $_POST['deskId'] = $deskId;
+		$_SESSION['landlords']['deskPosition'] = $_POST['deskPosition'] = $deskPosition;
 	}
 
-	return $deskRow;
+	return runFunction('actionInit', $_POST);
+}
+
+// 游戏的换桌
+function actionChange($uid, $username, $deskId, $deskPosition, $scores) {
+	if($deskId) {
+		$sql = 'SELECT isPlaying FROM desks WHERE deskId=?';
+		$params = array($deskId);
+		if(prepare($sql, $params)->fetchColumn()) {
+			return array(
+				'eval' => 'this.message("游戏已开始！")'
+			);
+		}
+
+		$sql = 'UPDATE desks SET players=players-1, ' . $deskPosition . 'Uid=0, ' . $deskPosition . 'GotReady=0, ' . $deskPosition . 'Dateline=0, ' . $deskPosition . 'Time=NULL WHERE deskId=?';
+		$params = array($deskId);
+		prepare($sql, $params);
+
+		$sql = 'UPDATE users SET deskId=0, deskPosition=NULL WHERE uid=?';
+		$params = array($uid);
+		prepare($sql, $params);
+	}
+
+	$_SESSION['landlords']['deskId'] = $_POST['deskId'] = 0;
+	$_SESSION['landlords']['deskPosition'] = $_POST['deskPosition'] = null;
+
+	$_POST['notDeskId'] = $deskId;
+
+	return runFunction('actionStart', $_POST);
 }

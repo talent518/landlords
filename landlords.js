@@ -314,7 +314,8 @@
 			self.btnNotLeadElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-not-lead">不出</button>').appendTo(self.wrapperElem);
 			self.btnPromptElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-prompt">提示</button>').appendTo(self.wrapperElem);
 			self.btnLeadElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-lead">出牌</button>').appendTo(self.wrapperElem);
-			self.btnChangeElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-change">换桌</button>').appendTo(self.wrapperElem);
+			self.btnChangeElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-change">换桌</button>').disabled(true).appendTo(self.wrapperElem);
+			self.btnLogoutElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-logout">退出</button>').appendTo(self.wrapperElem);
 
 			$('.g-landlords-name,.g-landlords-button,.g-close', self.wrapperElem).hover(function(){
 				$(this).addClass('hover');
@@ -322,16 +323,19 @@
 				$(this).removeClass('hover');
 			});
 
-			self.btnStartElem.click(function() {
-				self.btnStartElem.hide();
-
-				self.start();
+			self.btnLogoutElem.click(function() {
+				self.post('logout');
 			});
 
-			$(window).bind('beforeunload', function(e) {
-				if(self.isStarted) {
-					return '正在游戏中退出后由笨笨的机器代打，您还确定要退出吗？';
-				}
+			self.btnStartElem.click(function() {
+				self.btnStartElem.disabled(true);
+				self.btnChangeElem.disabled(false);
+
+				self.post('start');
+			});
+
+			self.btnChangeElem.click(function() {
+				self.post('change');
 			});
 
 			$(window).unload(function() {
@@ -495,6 +499,10 @@
 		post: function(action, data, callback, settings) {
 			var self = this;
 
+			if(!$.isPlainObject(data)) {
+				data = {};
+			}
+
 			if($.isFunction(data)) {
 				settings = callback;
 				callback = data;
@@ -511,12 +519,14 @@
 				settings = {};
 			}
 
+			data.action = action;
+
 			self.loadingElem.show();
 
 			$.ajax({
 				global: false,
 				url: self.options.ajaxUrl,
-				data: $.extend(true, {action: action}, data),
+				data: data,
 				type: 'POST',
 				success: function(response) {
 					try {
@@ -597,80 +607,39 @@
 		},
 		start: function() {
 			var self = this;
-			var j, bj = self.randInt(3), ej = 51 + bj, i, k, puke54Array = [];
-
-			for(k in $.landlordsGlobalOptions.puke54Object) {
-				puke54Array.push(k);
-			}
 			
 			self.isStarted = true;
-			self.playerArray = [];
-			self.leftArray = [];
-			self.rightArray = [];
-			self.cardsArray = [];
 
-			j=bj;
 			var zIndex = 1;
+			var k;
 			var timer = setInterval(function() {
-				if(puke54Array.length == 1) {
-					k = puke54Array.pop();
-				} else {
-					i = self.randInt(puke54Array.length);
-					k = puke54Array[i];
+				k = self.playerArray[zIndex-1];
+				self.renderPlayer(k);
+				self.resizePlayer();
+				self.playerNumberElem.show().text(zIndex);
 
-					puke54Array.splice(i, 1);
-				}
+				k = self.rightArray[zIndex-1];
+				self.renderRight(k, zIndex);
+				self.rightNumberElem.show().text(zIndex);
 
-				if(j>=ej-3) {
-					self.cardsArray.push(k);
-					self.renderCards(k);
-				} else {
-					switch(j%3) {
-						case 0:
-							self.playerArray.push(k);
-							self.renderPlayer(k);
-							self.resizePlayer();
-							self.playerNumberElem.show().text(self.playerArray.length);
-							break;
-						case 1:
-							self.rightArray.push(k);
-							self.renderRight(k, zIndex++);
-							self.rightNumberElem.show().text(self.rightArray.length);
-							break;
-						case 2:
-							self.leftArray.push(k);
-							self.renderLeft(k);
-							self.leftNumberElem.show().text(self.leftArray.length);
-							break;
-					}
-				}
+				k = self.leftArray[zIndex-1];
+				self.renderLeft(k);
+				self.leftNumberElem.show().text(zIndex);
 
-				j++;
-				if(j>=ej) {
+				if(zIndex == 13) {
 					clearInterval(timer);
-					self.sortRender();
+
+					self.renderCards();
+
+					setTimeout(function() {
+						self.sortRender();
+					}, 150);
 				}
-			}, 50);
+
+				zIndex++;
+			}, 150);
 
 			self.wrapperElem.addClass('started');
-
-			if(self.randInt(2)) {
-				self.playerAvatarElem.addClass('g-landlords-player-avatar-woman');
-			} else {
-				self.playerAvatarElem.removeClass('g-landlords-player-avatar-woman');
-			}
-
-			if(self.randInt(2)) {
-				self.leftAvatarElem.addClass('g-landlords-left-avatar-woman');
-			} else {
-				self.leftAvatarElem.removeClass('g-landlords-left-avatar-woman');
-			}
-
-			if(self.randInt(2)) {
-				self.rightAvatarElem.addClass('g-landlords-right-avatar-woman');
-			} else {
-				self.rightAvatarElem.removeClass('g-landlords-right-avatar-woman');
-			}
 		},
 		sortRender: function() {
 			var self = this;
