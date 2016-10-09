@@ -72,7 +72,7 @@ function prepare($sql, array $params = array()) {
 	try {
 		$stmt = $pdo->prepare($sql);
 		if(!$stmt->execute($params)) {
-			echo 'SQL: ', $sql, PHP_EOL, '错误代码: ', $stmt->errorCode(), PHP_EOL, '错误消息：', $stmt->errorInfo(), PHP_EOL, PHP_EOL;
+			echo 'SQL: ', $sql, PHP_EOL, '错误代码: ', $stmt->errorCode(), PHP_EOL, '错误消息：', $stmt->errorInfo()[2], PHP_EOL, PHP_EOL;
 			debug_print_backtrace();
 			exit;
 		}

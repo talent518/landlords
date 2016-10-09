@@ -1,8 +1,9 @@
 /*
-SQLyog Ultimate v11.5 (64 bit)
-MySQL - 5.6.21 : Database - landlords
+SQLyog Ultimate v12.09 (64 bit)
+MySQL - 5.6.23 : Database - landlords
 *********************************************************************
-*/
+*/
+
 
 /*!40101 SET NAMES utf8 */;
 
@@ -107,11 +108,11 @@ CREATE TABLE `users` (
   `salt` char(6) NOT NULL COMMENT '安全码',
   `deskId` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '桌ID',
   `deskPosition` enum('a','b','c') DEFAULT NULL COMMENT '桌位',
-  `scores` int(11) unsigned NOT NULL COMMENT '积分数',
-  `isWoman` tinyint(1) unsigned NOT NULL COMMENT '是否女性',
-  `dateline` int(10) NOT NULL COMMENT '注册时间戳',
-  `createTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '注册时间',
-  `lastLoginDateline` int(10) DEFAULT NULL COMMENT '最后登录时间戳',
+  `scores` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '积分数',
+  `isWoman` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '是否女性',
+  `dateline` int(10) NOT NULL DEFAULT '0' COMMENT '注册时间戳',
+  `createTime` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00' ON UPDATE CURRENT_TIMESTAMP COMMENT '注册时间',
+  `lastLoginDateline` int(10) NOT NULL DEFAULT '0' COMMENT '最后登录时间戳',
   `lastLoginTime` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '最后登录时间',
   PRIMARY KEY (`uid`),
   UNIQUE KEY `username` (`username`),
