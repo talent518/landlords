@@ -1,4 +1,4 @@
-.g-landlords{position:relative;margin:0px auto;width:1024px;height:600px;overflow:hidden;background:url(images/background.jpg) no-repeat;-moz-user-select:none;-webkit-user-select:none;user-select:none;}
+.g-landlords{position:relative;margin:0px auto;width:1024px;height:600px;overflow:hidden;background:url(images/background.jpg) no-repeat;border-radius:25px;-moz-user-select:none;-webkit-user-select:none;user-select:none;}
 
 .g-landlords-cards{position:absolute;left:512px;top:12px;margin-left:-42px;}
 

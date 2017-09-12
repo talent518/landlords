@@ -17,7 +17,7 @@ $pdo->exec('SET NAMES \'utf8\'');
 if(isset($_POST['action']) && function_exists($action = 'action' . ucfirst($_POST['action']))) {
 	session_start();
 
-	$isNeedLogin = ($action !== 'actionLogin' && $action !== 'actionRegister');
+	$isNeedLogin = !in_array($_POST['action'], array('login', 'register'));
 	$isLogined = isset($_SESSION['landlords']) && is_array($_SESSION['landlords']);
 
 	if(!$isNeedLogin && $isLogined) {
@@ -741,19 +741,7 @@ function actionLogout() {
 
 // 游戏初始化
 function actionInit($uid, $username, $deskId, $deskPosition, $scores, $isWoman, $action, $isTimer = false) {
-	$isPlaying = false;
-
-	$eval = <<<EOD
-var self = this;
-
-self.wrapperElem.addClass('logined');
-
-$('.name', self.playerNameElem).attr('title', json.username).text(json.username);
-self.playerScoreElem.text(json.scores);
-if(json.isWoman) {
-	self.playerAvatarElem.addClass('g-landlords-avatar-woman');
-}
-EOD;
+	$isPlaying = 0;
 
 	if($deskId) {
 		$sql = 'SELECT * FROM desks WHERE deskId=?';
@@ -779,6 +767,7 @@ EOD;
 			list($cUsername, $cScores, $cIsWoman) = prepare($sql, $params)->fetch(PDO::FETCH_NUM);
 		}
 
+		// 未开局，发牌并初始化开局参数
 		if(!$isPlaying && $players == 3) {
 			$isPlaying = 1;
 			$pukes = array('LJ');
@@ -815,174 +804,28 @@ EOD;
 
 			unset($pukes, $i, $k1, $k2);
 
-			$sql = 'UPDATE desks SET isPlaying=1, aCards=?, bCards=?, cCards=?, cards=? WHERE deskId=?';
-			$params = array($aCards, $bCards, $cCards, $cards, $deskId);
+			mt_srand((int)(TIMESTAMP * 1000));
+			$weightPosition = chr(ord('a') + rand() % 3); // 随机选取a,b,c其中之一
+			$weightDateline = (int)TIMESTAMP;
+
+			$sql = 'UPDATE desks SET isPlaying=1, weightPosition=?, weightDateline=?, weightTime=?, aCards=?, bCards=?, cCards=?, cards=? WHERE deskId=?';
+			$params = array($weightPosition, $weightDateline, $weightTime, $aCards, $bCards, $cCards, $cards, $deskId);
 			prepare($sql, $params);
 		}
 
-		$eval .= PHP_EOL;
-		$eval .= PHP_EOL;
-
-		$eval .= <<<EOD
-if(json.aUid === json.uid) {
-	if(json.aCards) {
-		self.playerArray = json.aCards.split(',');
-	}
-
-	if(json.bUid) {
-		self.rightAvatarElem.show();
-		self.rightNameElem.show();
-
-		$('.name', self.rightNameElem).attr('title', json.bUsername).text(json.bUsername);
-		self.rightScoreElem.text(json.bScores);
-
-		if(json.bIsWoman) {
-			self.rightAvatarElem.addClass('g-landlords-avatar-woman');
-		} else {
-			self.rightAvatarElem.removeClass('g-landlords-avatar-woman');
-		}
-
-		if(json.bCards) {
-			self.rightArray = json.bCards.split(',');
-		}
-	}
-	if(json.cUid) {
-		self.leftAvatarElem.show();
-		self.leftNameElem.show();
-
-		$('.name', self.leftNameElem).attr('title', json.cUsername).text(json.cUsername);
-		self.leftScoreElem.text(json.cScores);
-
-		if(json.cIsWoman) {
-			self.leftAvatarElem.addClass('g-landlords-avatar-woman');
-		} else {
-			self.leftAvatarElem.removeClass('g-landlords-avatar-woman');
-		}
-
-		if(json.cCards) {
-			self.leftArray = json.cCards.split(',');
-		}
-	}
-} else if(json.bUid === json.uid) {
-	if(json.bCards) {
-		self.playerArray = json.bCards.split(',');
-	}
-
-	if(json.cUid) {
-		self.rightAvatarElem.show();
-		self.rightNameElem.show();
-
-		$('.name', self.rightNameElem).attr('title', json.cUsername).text(json.cUsername);
-		self.rightScoreElem.text(json.cScores);
-
-		if(json.cIsWoman) {
-			self.rightAvatarElem.addClass('g-landlords-avatar-woman');
-		} else {
-			self.rightAvatarElem.removeClass('g-landlords-avatar-woman');
-		}
-
-		if(json.cCards) {
-			self.rightArray = json.cCards.split(',');
-		}
-	}
-	if(json.aUid) {
-		self.leftAvatarElem.show();
-		self.leftNameElem.show();
-
-		$('.name', self.leftNameElem).attr('title', json.aUsername).text(json.aUsername);
-		self.leftScoreElem.text(json.aScores);
-
-		if(json.aIsWoman) {
-			self.leftAvatarElem.addClass('g-landlords-avatar-woman');
-		} else {
-			self.leftAvatarElem.removeClass('g-landlords-avatar-woman');
-		}
-
-		if(json.aCards) {
-			self.leftArray = json.aCards.split(',');
-		}
-	}
-} else {
-	if(json.cCards) {
-		self.playerArray = json.cCards.split(',');
-	}
-
-	if(json.aUid) {
-		self.rightAvatarElem.show();
-		self.rightNameElem.show();
-
-		$('.name', self.rightNameElem).attr('title', json.aUsername).text(json.aUsername);
-		self.rightScoreElem.text(json.aScores);
-
-		if(json.aIsWoman) {
-			self.rightAvatarElem.addClass('g-landlords-avatar-woman');
-		} else {
-			self.rightAvatarElem.removeClass('g-landlords-avatar-woman');
-		}
-
-		if(json.aCards) {
-			self.rightArray = json.aCards.split(',');
-		}
-	}
-	if(json.bUid) {
-		self.leftAvatarElem.show();
-		self.leftNameElem.show();
-
-		$('.name', self.leftNameElem).attr('title', json.bUsername).text(json.bUsername);
-		self.leftScoreElem.text(json.bScores);
-
-		if(json.bIsWoman) {
-			self.leftAvatarElem.addClass('g-landlords-avatar-woman');
-		} else {
-			self.leftAvatarElem.removeClass('g-landlords-avatar-woman');
-		}
-
-		if(json.bCards) {
-			self.leftArray = json.bCards.split(',');
-		}
-	}
-}
-
-if(json.cards) {
-	self.cardsArray = json.cards.split(',');
-}
-
-if(json.{$deskPosition}GotReady) {
-	self.isStarted = true;
-	self.wrapperElem.addClass('started');
-	self.btnStartElem.disabled(true);
-	self.btnChangeElem.disabled(false);
-} else {
-	self.isStarted = false;
-	self.wrapperElem.removeClass('started');
-	self.btnStartElem.disabled(false);
-	self.btnChangeElem.disabled(true);
-}
-EOD;
-
 		if($isPlaying) {
-			$eval .= <<<EOD
-clearTimeout(self.timer);
-
-self.btnStartElem.hide();
-self.btnChangeElem.hide();
-self.btnLogoutElem.hide();
-self.start();
-EOD;
-		} elseif($action === 'start' || $action === 'change' || $isTimer) {
-			$eval .= <<<EOD
-clearTimeout(self.timer);
-
-self.timer = setTimeout(function() {
-	self.post('init', {isTimer:1});
-}, 1000);
-EOD;
+			foreach(array('a','b','c') as $k) {
+				if(${$k . 'Uid'} !== $uid && !${$k . 'IsSeed'}) {
+					${$k . 'Cards'} = preg_replace('/[A-Z0-9]+/', 'NN', ${$k . 'Cards'});
+				}
+			}
+			unset($k);
 		}
+
+		$cards = preg_replace('/[A-Z0-9]+/', 'NN', $cards);
 
 		unset($sql, $params);
 	}
-
-	unset($deskId);
 
 	$ret = get_defined_vars();
 
@@ -991,6 +834,8 @@ EOD;
 			$ret[$k] = $v + 0;
 		}
 	}
+
+	$ret['eval'] = 'this.renderInit(json);';
 
 	return $ret;
 }
@@ -1064,4 +909,16 @@ function actionChange($uid, $username, $deskId, $deskPosition, $scores) {
 	$_POST['notDeskId'] = $deskId;
 
 	return runFunction('actionStart', $_POST);
+}
+
+function actionTimeout($uid, $deskId) {
+	$sql = 'SELECT * FROM desks WHERE deskId=?';
+	$params = array($deskId);
+
+	$desk = prepare($sql, $params)->fetchObject();
+
+	return array(
+		'msg' => ($desk->isPlaying == 1 ? '枪地主' : '出牌') . '超时！',
+		'eval' => 'this.message(json.msg);',
+	);
 }

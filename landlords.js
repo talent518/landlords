@@ -96,6 +96,15 @@
 					points: pointsString.charAt(16)
 				};
 				// console.log($.landlordsGlobalOptions.puke54Object.LJ);
+			} else if(x == 2) {
+				$.landlordsGlobalOptions.puke54Object.NN = {
+					title: '背面',
+					Y: 4,
+					X: 2,
+					sort: 48,
+					points: ' '
+				};
+				// console.log($.landlordsGlobalOptions.puke54Object.NN);
 			} else {
 				return false;
 			}
@@ -536,7 +545,11 @@
 						}
 						callback.call(self, json);
 					} catch (e) {
-						self.message(response, $.inArray('html', this.dataTypes) > -1);
+						if(window.console && window.console.log) {
+							window.console.log(e);
+							window.console.log('response = ', response);
+						}
+						self.message(e.message);
 					}
 				},
 				error: function(xhr) {
@@ -605,6 +618,114 @@
 				clean: cleanCall
 			};
 		},
+		renderInit: function(json) {
+			var self = this;
+
+			self.wrapperElem.addClass('logined');
+
+			$('.name', self.playerNameElem).attr('title', json.username).text(json.username);
+			self.playerScoreElem.text(json.scores);
+			if(json.isWoman) {
+				self.playerAvatarElem.addClass('g-landlords-avatar-woman');
+			}
+
+			if(json.deskId) {
+				$.each(['a', 'b', 'c'], function(k, v) {
+					if(json[v + 'Uid'] === json.uid) {
+						self.playerPosition = v;
+					}
+				});
+				if(self.playerPosition === 'b') {
+					self.rightPosition = 'c';
+					self.leftPosition = 'a';
+				} else if(self.playerPosition === 'c') {
+					self.rightPosition = 'a';
+					self.leftPosition = 'b';
+				} else {
+					self.rightPosition = 'b';
+					self.leftPosition = 'c';
+				}
+				var cards, username;
+
+				cards = json[self.playerPosition + 'Cards'];
+				if(cards && cards.length) {
+					self.playerArray = cards.split(',');
+				}
+				if(json[self.rightPosition + 'Uid']) {
+					self.rightAvatarElem.show();
+					self.rightNameElem.show();
+
+					username = json[self.rightPosition + 'Username']
+
+					$('.name', self.rightNameElem).attr('title', username).text(username);
+					self.rightScoreElem.text(json[self.rightPosition + 'Scores']);
+
+					if(json[self.rightPosition + 'IsWoman']) {
+						self.rightAvatarElem.addClass('g-landlords-avatar-woman');
+					} else {
+						self.rightAvatarElem.removeClass('g-landlords-avatar-woman');
+					}
+
+					cards = json[self.rightPosition + 'Cards'];
+					if(cards && cards.length) {
+						self.rightArray = cards.split(',');
+					}
+				}
+				if(json[self.leftPosition + 'Uid']) {
+					self.leftAvatarElem.show();
+					self.leftNameElem.show();
+
+					username = json[self.leftPosition + 'Username']
+
+					$('.name', self.leftNameElem).attr('title', username).text(username);
+					self.leftScoreElem.text(json[self.leftPosition + 'Scores']);
+
+					if(json[self.leftPosition + 'IsWoman']) {
+						self.leftAvatarElem.addClass('g-landlords-avatar-woman');
+					} else {
+						self.leftAvatarElem.removeClass('g-landlords-avatar-woman');
+					}
+
+					cards = json[self.leftPosition + 'Cards'];
+					if(cards && cards.length) {
+						self.leftArray = cards.split(',');
+					}
+				}
+
+				if(json.cards) {
+					self.cardsArray = json.cards.split(',');
+				}
+
+				if(json[json.deskPosition + 'GotReady']) {
+					self.isStarted = true;
+					self.wrapperElem.addClass('started');
+					self.btnStartElem.disabled(true);
+					self.btnChangeElem.disabled(false);
+				} else {
+					self.isStarted = false;
+					self.wrapperElem.removeClass('started');
+					self.btnStartElem.disabled(false);
+					self.btnChangeElem.disabled(true);
+				}
+
+				self.weightPosition = json.weightPosition;
+
+				if(json.isPlaying) {
+					clearTimeout(self.timer);
+
+					self.btnStartElem.hide();
+					self.btnChangeElem.hide();
+					self.btnLogoutElem.hide();
+					self.start();
+				} else if(json.action === 'start' || json.action === 'change' || json.isTimer) {
+					clearTimeout(self.timer);
+
+					self.timer = setTimeout(function() {
+						self.post('init', {isTimer:1});
+					}, 1000);
+				}
+			}
+		},
 		start: function() {
 			var self = this;
 			
@@ -626,7 +747,7 @@
 				self.renderLeft(k);
 				self.leftNumberElem.show().text(zIndex);
 
-				if(zIndex == 13) {
+				if(zIndex == self.playerArray.length) {
 					clearInterval(timer);
 
 					self.renderCards();
@@ -660,15 +781,23 @@
 				return $.landlordsGlobalOptions.puke54Object[b].sort - $.landlordsGlobalOptions.puke54Object[a].sort;
 			});
 
-			self.playerNumberElem.text(13);
-			self.leftNumberElem.text(13);
-			self.rightNumberElem.text(13);
+			self.playerNumberElem.text(self.playerArray.length);
+			self.leftNumberElem.text(self.leftArray.length);
+			self.rightNumberElem.text(self.rightArray.length);
 
 			self.renderCards();
 			self.renderPlayer();
 			self.renderLeft();
 			self.renderRight();
 			self.resizePlayer();
+
+			if(self.playerPosition === self.weightPosition) {
+				self.downTimer(self.playerTimerElem.show(), function() {self.post('timeout')});
+			} else if(self.rightPosition === self.weightPosition) {
+				self.downTimer(self.rightTimerElem.show());
+			} else if(self.leftPosition === self.weightPosition) {
+				self.downTimer(self.leftTimerElem.show());
+			}
 		},
 		renderCards: function(k) {
 			var self = this;
