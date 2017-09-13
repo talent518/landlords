@@ -4,6 +4,13 @@ header('Content-Type: text/paint; charset=utf-8');
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE & ~E_WARNING & ~E_STRICT);
 
 define('TIMESTAMP', microtime(true));
+define('ACTION_TYPE_ROB_LANDLORDS', 1); // 抢地主，isRobot(是否机器人处理)
+define('ACTION_TYPE_NO_ROB', 2); // 不抢
+define('ACTION_TYPE_SEED_CARDS', 3); // 明牌
+define('ACTION_TYPE_DOUBLE', 4); // 加倍
+define('ACTION_TYPE_SUPER_DOUBLE', 5); // 超级加倍
+define('ACTION_TYPE_LEAD', 6); // 出牌，字段：deskPosition(桌位)，beforeCards(出牌前手中的牌)，leads(出的牌)，isRobot(是否机器人处理)
+define('ACTION_TYPE_NO_LEAD', 7); // 不出
 
 try {
 	$pdo=new PDO('mysql:host=localhost;dbname=landlords', 'root', '123456');
@@ -14,10 +21,10 @@ try {
 
 $pdo->exec('SET NAMES \'utf8\'');
 
-if(isset($_POST['action']) && function_exists($action = 'action' . ucfirst($_POST['action']))) {
+if(isset($_REQUEST['action']) && function_exists($action = 'action' . ucfirst($_REQUEST['action']))) {
 	session_start();
 
-	$isNeedLogin = !in_array($_POST['action'], array('login', 'register'));
+	$isNeedLogin = !in_array($_REQUEST['action'], array('login', 'register'));
 	$isLogined = isset($_SESSION['landlords']) && is_array($_SESSION['landlords']);
 
 	if(!$isNeedLogin && $isLogined) {
@@ -42,12 +49,12 @@ if(isset($_POST['action']) && function_exists($action = 'action' . ucfirst($_POS
 
 			$_SESSION['regenerateDateline'] = TIMESTAMP;
 		}
-		$_POST = array_merge($_POST, $_SESSION['landlords']);
+		$_REQUEST = array_merge($_REQUEST, $_SESSION['landlords']);
 	}
 
 	try {
 		$pdo->beginTransaction();
-		$json = runFunction($action, $_POST);
+		$json = runFunction($action, $_REQUEST);
 		$pdo->commit();
 
 		renderJson($json);
@@ -728,10 +735,23 @@ function actionLogin($username, $password) {
 }
 
 // 用户退出
-function actionLogout() {
+function actionLogout($uid, $deskId, $deskPosition) {
 	$landlords = $_SESSION['landlords'];
 
 	unset($_SESSION['landlords']);
+
+	if($deskId) {
+		$sql = 'SELECT isPlaying FROM desks WHERE deskId=?';
+		$params = array($uid);
+		if(!prepare($sql, $params)->fetchColumn()) {
+			$sql = 'UPDATE users SET deskId=0,deskPosition=NULL WHERE uid=?';
+			$params = array($uid);
+			prepare($sql, $params);
+			$sql = str_replace('{prefix}', $deskPosition, 'UPDATE desks SET players=players-1,{prefix}Uid=0,{prefix}GotReady=0,aCards=NULL,{prefix}Leads=NULL,{prefix}IsSeed=0,{prefix}IsRobot=0,{prefix}Dateline=0,{prefix}Time=\'0000-00-00 00:00:00\' WHERE deskId=? AND aUid=?');
+			$params = array($deskId, $uid);
+			prepare($sql, $params);
+		}
+	}
 
 	return array(
 		'removeClass' => 'logined started',
@@ -739,9 +759,20 @@ function actionLogout() {
 	);
 }
 
+function arrayNumeric(array &$ret) {
+	foreach($ret as $k => &$v) {
+		if(is_numeric($v)) {
+			$v = $v + 0;
+		} elseif(is_array($v)) {
+			arrayNumeric($v);
+		}
+	}
+}
+
 // 游戏初始化
-function actionInit($uid, $username, $deskId, $deskPosition, $scores, $isWoman, $action, $isTimer = false) {
+function actionInit($uid, $username, $deskId, $deskPosition, $scores, $isWoman, $action) {
 	$isPlaying = 0;
+	$maxLogId = 0;
 
 	if($deskId) {
 		$sql = 'SELECT * FROM desks WHERE deskId=?';
@@ -807,10 +838,15 @@ function actionInit($uid, $username, $deskId, $deskPosition, $scores, $isWoman, 
 			mt_srand((int)(TIMESTAMP * 1000));
 			$weightPosition = chr(ord('a') + rand() % 3); // 随机选取a,b,c其中之一
 			$weightDateline = (int)TIMESTAMP;
+			$weightTime = date('Y-m-d H:i:s', $weightDateline);
 
-			$sql = 'UPDATE desks SET isPlaying=1, weightPosition=?, weightDateline=?, weightTime=?, aCards=?, bCards=?, cCards=?, cards=? WHERE deskId=?';
+			$sql = 'UPDATE desks SET isPlaying=1, openGames=openGames+1, weightPosition=?, weightDateline=?, weightTime=?, aCards=?, bCards=?, cCards=?, cards=? WHERE deskId=?';
 			$params = array($weightPosition, $weightDateline, $weightTime, $aCards, $bCards, $cCards, $cards, $deskId);
 			prepare($sql, $params);
+
+			$sql = 'SELECT openGames FROM desks WHERE deskId=?';
+			$params = array($deskId);
+			$openGames = prepare($sql, $params)->fetchColumn();
 		}
 
 		if($isPlaying) {
@@ -820,6 +856,10 @@ function actionInit($uid, $username, $deskId, $deskPosition, $scores, $isWoman, 
 				}
 			}
 			unset($k);
+
+			$sql = 'SELECT MAX(logId) FROM desk_action_logs WHERE deskId=? AND openGames=?';
+			$params = array($deskId, $openGames);
+			$maxLogId = prepare($sql, $params)->fetchColumn();
 		}
 
 		$cards = preg_replace('/[A-Z0-9]+/', 'NN', $cards);
@@ -829,11 +869,7 @@ function actionInit($uid, $username, $deskId, $deskPosition, $scores, $isWoman, 
 
 	$ret = get_defined_vars();
 
-	foreach($ret as $k => $v) {
-		if(is_numeric($v)) {
-			$ret[$k] = $v + 0;
-		}
-	}
+	arrayNumeric($ret);
 
 	$ret['eval'] = 'this.renderInit(json);';
 
@@ -876,11 +912,11 @@ function actionStart($uid, $username, $deskId, $deskPosition, $scores, $notDeskI
 		$params = array($deskId, $deskPosition, $uid);
 		prepare($sql, $params);
 
-		$_SESSION['landlords']['deskId'] = $_POST['deskId'] = $deskId;
-		$_SESSION['landlords']['deskPosition'] = $_POST['deskPosition'] = $deskPosition;
+		$_SESSION['landlords']['deskId'] = $_REQUEST['deskId'] = $deskId;
+		$_SESSION['landlords']['deskPosition'] = $_REQUEST['deskPosition'] = $deskPosition;
 	}
 
-	return runFunction('actionInit', $_POST);
+	return runFunction('actionInit', $_REQUEST);
 }
 
 // 游戏的换桌
@@ -903,12 +939,64 @@ function actionChange($uid, $username, $deskId, $deskPosition, $scores) {
 		prepare($sql, $params);
 	}
 
-	$_SESSION['landlords']['deskId'] = $_POST['deskId'] = 0;
-	$_SESSION['landlords']['deskPosition'] = $_POST['deskPosition'] = null;
+	$_SESSION['landlords']['deskId'] = $_REQUEST['deskId'] = 0;
+	$_SESSION['landlords']['deskPosition'] = $_REQUEST['deskPosition'] = null;
 
-	$_POST['notDeskId'] = $deskId;
+	$_REQUEST['notDeskId'] = $deskId;
 
-	return runFunction('actionStart', $_POST);
+	return runFunction('actionStart', $_REQUEST);
+}
+
+function nextWeightPosition($weightPosition) {
+	$aOrd = ord('a');
+
+	return chr($aOrd + (ord($weightPosition) - $aOrd + 1) % 3);
+}
+
+function actionCall($uid, $deskId, $isRob) {
+	$sql = 'SELECT openGames, weightPosition FROM desks WHERE deskId=?';
+	$params = array($deskId);
+
+	list($openGames, $weightPosition) = prepare($sql, $params)->fetch(PDO::FETCH_NUM);
+
+	$sql = 'INSERT INTO desk_action_logs (uid, deskId, openGames, actionType, weightPosition, dateline, createTime)VALUES(?, ?, ?, ?, ?, UNIX_TIMESTAMP(), NOW())';
+	$params = array($uid, $deskId, $openGames, $isRob ? ACTION_TYPE_ROB_LANDLORDS : ACTION_TYPE_NO_ROB, $weightPosition);
+	prepare($sql, $params);
+
+	$sql = 'UPDATE desks SET weightPosition = ?, weightDateline=UNIX_TIMESTAMP(), weightTime=NOW() WHERE deskId = ?';
+	$params = array(nextWeightPosition($weightPosition), $deskId);
+	prepare($sql, $params);
+
+	return array(
+		'eval'=>'this.btnElems.hide();'
+	);
+}
+
+function actionProcess($uid, $deskId, $maxLogId) {
+	$sql = 'SELECT * FROM desks WHERE deskId=?';
+	$params = array($deskId);
+	$desk = prepare($sql, $params)->fetchObject();
+
+	$sql = 'SELECT * FROM desk_action_logs WHERE deskId=? AND openGames=?';
+	$params = array($deskId, $desk->openGames);
+	if($maxLogId>0) {
+		$sql .= ' AND logId>?';
+		$params[] = $maxLogId;
+	}
+	$stmt = prepare($sql, $params);
+
+	$ret = array();
+	$ret['actions'] = [];
+
+	while(($row = $stmt->fetch(PDO::FETCH_ASSOC)) !== false) {
+		arrayNumeric($row);
+		$ret['actions'][] = $row;
+	}
+
+	$ret['isPlaying'] = $desk->isPlaying+0;
+	$ret['eval'] = 'this.renderProcess(json);';
+
+	return $ret;
 }
 
 function actionTimeout($uid, $deskId) {
@@ -918,7 +1006,7 @@ function actionTimeout($uid, $deskId) {
 	$desk = prepare($sql, $params)->fetchObject();
 
 	return array(
-		'msg' => ($desk->isPlaying == 1 ? '枪地主' : '出牌') . '超时！',
-		'eval' => 'this.message(json.msg);',
+		'isPlaying' => $desk->isPlaying+0,
+		'eval' => 'this.renderBtn(json.isPlaying);',
 	);
 }

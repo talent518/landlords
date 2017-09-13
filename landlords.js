@@ -1,4 +1,11 @@
 (function($) {
+	const ACTION_TYPE_ROB_LANDLORDS = 1; // 抢地主，isRobot(是否机器人处理)
+	const ACTION_TYPE_NO_ROB = 2; // 不抢
+	const ACTION_TYPE_SEED_CARDS = 3; // 明牌
+	const ACTION_TYPE_DOUBLE = 4; // 加倍
+	const ACTION_TYPE_SUPER_DOUBLE = 5; // 超级加倍
+	const ACTION_TYPE_LEAD = 6; // 出牌，字段：deskPosition(桌位)，beforeCards(出牌前手中的牌)，leads(出的牌)，isRobot(是否机器人处理)
+	const ACTION_TYPE_NO_LEAD = 7; // 不出
 
 	/**
 	 * 反转数组
@@ -232,7 +239,7 @@
 	$.landlords.prototype = {
 		options: {
 			isRobot: false,
-			ajaxUrl: 'landlords.php'
+			ajaxUrl: 'landlords.php?action={action}'
 		},
 
 		wrapperElem: $([]), // 游戏的主容器
@@ -302,6 +309,7 @@
 			self.playerNameElem = $('<div class="g-landlords-name g-landlords-player-name"><span class="mask"></span><a class="name" href="#" title="玩家一">玩家一</a></div>').appendTo(self.wrapperElem);
 			self.playerNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-player-number">0</div>').appendTo(self.wrapperElem);
 			self.playerTimerElem = $('<div class="g-landlords-icons g-landlords-timer g-landlords-player-timer">30</div>').appendTo(self.wrapperElem);
+			self.playerMsgElem = $('<div class="g-landlords-msg g-landlords-player-msg"></div>').appendTo(self.wrapperElem);
 
 			self.leftElem = $('<div class="g-landlords-left" style="padding-top:' + $.landlordsGlobalOptions.paddingLeftOrTopPercent + ';"></div>').appendTo(self.wrapperElem);
 			self.leftAvatarElem = $('<div class="g-landlords-icons g-landlords-avatar g-landlords-left-avatar"></div>').appendTo(self.wrapperElem);
@@ -309,6 +317,7 @@
 			self.leftNameElem = $('<div class="g-landlords-name g-landlords-left-name"><span class="mask"></span><a class="name" href="#" title="玩家三">玩家三</a></div>').appendTo(self.wrapperElem);
 			self.leftNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-left-number">0</div>').appendTo(self.wrapperElem);
 			self.leftTimerElem = $('<div class="g-landlords-icons g-landlords-timer g-landlords-left-timer">30</div>').appendTo(self.wrapperElem);
+			self.leftMsgElem = $('<div class="g-landlords-msg g-landlords-left-msg"></div>').appendTo(self.wrapperElem);
 
 			self.rightElem = $('<div class="g-landlords-right" style="padding-top:' + $.landlordsGlobalOptions.paddingLeftOrTopPercent + ';"></div>').appendTo(self.wrapperElem);
 			self.rightAvatarElem = $('<div class="g-landlords-icons g-landlords-avatar g-landlords-right-avatar"></div>').appendTo(self.wrapperElem);
@@ -316,6 +325,7 @@
 			self.rightNameElem = $('<div class="g-landlords-name g-landlords-right-name"><span class="mask"></span><a class="name" href="#" title="玩家二">玩家二</a></div>').appendTo(self.wrapperElem);
 			self.rightNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-right-number">0</div>').appendTo(self.wrapperElem);
 			self.rightTimerElem = $('<div class="g-landlords-icons g-landlords-timer g-landlords-right-timer">30</div>').appendTo(self.wrapperElem);
+			self.rightMsgElem = $('<div class="g-landlords-msg g-landlords-right-msg"></div>').appendTo(self.wrapperElem);
 
 			self.btnStartElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-start">开始</button>').appendTo(self.wrapperElem);
 			self.btnCallElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-call">叫地主</button>').appendTo(self.wrapperElem);
@@ -325,6 +335,10 @@
 			self.btnLeadElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-lead">出牌</button>').appendTo(self.wrapperElem);
 			self.btnChangeElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-change">换桌</button>').disabled(true).appendTo(self.wrapperElem);
 			self.btnLogoutElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-logout">退出</button>').appendTo(self.wrapperElem);
+			self.btnSeedCardsElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-seed-cards">明牌</button>').appendTo(self.wrapperElem);
+			self.btnDoubleElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-double">加倍</button>').appendTo(self.wrapperElem);
+			self.btnSuperDoubleElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-super-double">超级加倍</button>').appendTo(self.wrapperElem);
+			self.btnElems = $('.g-landlords-button', self.wrapperElem);
 
 			$('.g-landlords-name,.g-landlords-button,.g-close', self.wrapperElem).hover(function(){
 				$(this).addClass('hover');
@@ -345,6 +359,38 @@
 
 			self.btnChangeElem.click(function() {
 				self.post('change');
+			});
+
+			self.btnCallElem.click(function() {
+				self.post('call', {isRob:1});
+			});
+
+			self.btnNotCallElem.click(function() {
+				self.post('call', {isRob:0});
+			});
+
+			self.btnLeadElem.click(function() {
+				self.post('lead');
+			});
+
+			self.btnNotLeadElem.click(function() {
+				self.post('notLead');
+			});
+
+			self.btnPromptElem.click(function() {
+				self.post('prompt');
+			});
+
+			self.btnSeedCardsElem.click(function() {
+				self.post('seedCards');
+			});
+
+			self.btnDoubleElem.click(function() {
+				self.post('Double');
+			});
+
+			self.btnSuperDoubleElem.click(function() {
+				self.post('superDouble');
 			});
 
 			$(window).unload(function() {
@@ -451,9 +497,7 @@
 
 				self.post(action, data, function(json) {
 					if(json.status) {
-						self.message($('button:visible', formElem).text() + '成功！', 0, function() {
-							self.post('init');
-						});
+						self.post('init');
 					} else {
 						self.message($('button:visible', formElem).text() + '失败！', 0, 1);
 					}
@@ -508,19 +552,19 @@
 		post: function(action, data, callback, settings) {
 			var self = this;
 
-			if(!$.isPlainObject(data)) {
-				data = {};
-			}
-
 			if($.isFunction(data)) {
 				settings = callback;
 				callback = data;
 				data = {};
 			}
 
+			if(!$.isPlainObject(data)) {
+				data = {};
+			}
+
 			if(!$.isFunction(callback)) {
 				callback = function(json) {
-					if(typeof(json.callback) === 'string') {
+					if($.isPlainObject(json) && json.callback) {
 						json.callback = new Function('json', json.callback);
 						json.callback.call(self, json);
 					}
@@ -528,13 +572,11 @@
 				settings = {};
 			}
 
-			data.action = action;
-
 			self.loadingElem.show();
 
 			$.ajax({
 				global: false,
-				url: self.options.ajaxUrl,
+				url: self.options.ajaxUrl.replace('{action}', action),
 				data: data,
 				type: 'POST',
 				success: function(response) {
@@ -709,22 +751,82 @@
 				}
 
 				self.weightPosition = json.weightPosition;
+				self.isPlaying = json.isPlaying;
+				self.maxLogId = json.maxLogId;
 
 				if(json.isPlaying) {
-					clearTimeout(self.timer);
+					clearTimeout(self.initTimer);
 
 					self.btnStartElem.hide();
 					self.btnChangeElem.hide();
 					self.btnLogoutElem.hide();
 					self.start();
-				} else if(json.action === 'start' || json.action === 'change' || json.isTimer) {
-					clearTimeout(self.timer);
+				} else {
+					clearTimeout(self.initTimer);
 
-					self.timer = setTimeout(function() {
+					self.initTimer = setTimeout(function() {
 						self.post('init', {isTimer:1});
 					}, 1000);
 				}
 			}
+		},
+		renderProcess: function(json) {
+			var self = this
+
+			$.each(json.actions, function(k, v) {
+				var msg = false;
+				switch(v.actionType) {
+					case ACTION_TYPE_ROB_LANDLORDS:
+						msg = '叫地主';
+						break;
+					case ACTION_TYPE_NO_ROB:
+						msg = '不抢';
+						break;
+					case ACTION_TYPE_SEED_CARDS:
+						msg = '明牌';
+						break;
+					case ACTION_TYPE_DOUBLE:
+						msg = '加倍';
+						break;
+					case ACTION_TYPE_SUPER_DOUBLE:
+						msg = '超级加倍';
+						break;
+					case ACTION_TYPE_LEAD:
+						msg = '出牌';
+						break;
+					case ACTION_TYPE_NO_LEAD:
+						msg = '不出';
+						break;
+				}
+				switch(v.weightPosition) {
+					case self.playerPosition:
+						self.btnElems.hide().disabled(false);
+						self.playerMsgElem.text(msg);
+						self.playerDownTimer.clean();
+						self.rightMsgElem.text('');
+						self.rightDownTimer = self.downTimer(self.rightTimerElem.show());
+						break;
+					case self.rightPosition:
+						self.rightMsgElem.text(msg);
+						self.rightDownTimer.clean();
+						self.leftMsgElem.text('');
+						self.leftDownTimer = self.downTimer(self.leftTimerElem.show());
+						break;
+					case self.leftPosition:
+						self.leftMsgElem.text(msg);
+						self.leftDownTimer.clean();
+						self.playerMsgElem.text('');
+						self.playerDownTimer = self.downTimer(self.playerTimerElem.show(), function(){self.post('timeout');});
+						self.renderBtn(json.isPlaying);
+						break;
+				}
+				self.maxLogId = Math.max(self.maxLogId, v.logId);
+			});
+
+			clearTimeout(self.processTimer);
+			self.processTimer = setTimeout(function() {
+				self.post('process', {maxLogId: self.maxLogId});
+			}, 500);
 		},
 		start: function() {
 			var self = this;
@@ -754,11 +856,11 @@
 
 					setTimeout(function() {
 						self.sortRender();
-					}, 150);
+					}, 60);
 				}
 
 				zIndex++;
-			}, 150);
+			}, 60);
 
 			self.wrapperElem.addClass('started');
 		},
@@ -791,12 +893,39 @@
 			self.renderRight();
 			self.resizePlayer();
 
+			self.renderProcess({actions:[]});
+
 			if(self.playerPosition === self.weightPosition) {
-				self.downTimer(self.playerTimerElem.show(), function() {self.post('timeout')});
+				self.renderBtn(self.isPlaying);
+				self.playerDownTimer = self.downTimer(self.playerTimerElem.show(), function(){self.post('timeout');});
 			} else if(self.rightPosition === self.weightPosition) {
-				self.downTimer(self.rightTimerElem.show());
+				self.rightDownTimer = self.downTimer(self.rightTimerElem.show());
 			} else if(self.leftPosition === self.weightPosition) {
-				self.downTimer(self.leftTimerElem.show());
+				self.leftDownTimer = self.downTimer(self.leftTimerElem.show());
+			}
+		},
+		renderBtn: function(isPlaying) {
+			var self = this;
+
+			self.btnElems.hide().disabled(false);
+
+			switch(isPlaying) {
+				case 1: {
+					self.btnCallElem.show();
+					self.btnNotCallElem.show();
+					break;
+				}
+				case -1: { // 明牌、加倍、超级加倍
+					self.btnCallElem.show();
+					self.btnNotCallElem.show();
+					break;
+				}
+				case 2: {
+					self.btnLeadElem.show();
+					self.btnNotLeadElem.show();
+					self.btnPromptElem.show();
+					break;
+				}
 			}
 		},
 		renderCards: function(k) {
