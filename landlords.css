@@ -5,6 +5,7 @@
 .g-landlords-icons{background:transparent url(images/icons.png) left top no-repeat;}
 
 .g-landlords-avatar{display:none;position:absolute;width:200px;height:200px;overflow:hidden;}
+.g-landlords-avatar .g-landholder{display:none;position:absolute;left:15px;top:10px;width:48px;height:48px;background:url(images/landholder.png) left top no-repeat; background-size:100% 100%;}
 .g-landlords-avatar .g-score{position:absolute;right:20px;top:0px;color:#F60;font-size:30px;font-weight:bold;}
 .g-landlords-avatar-woman{background-position:0px -200px;}
 
@@ -39,6 +40,8 @@
 
 .g-landlords-right{position:absolute;right:200px;top:50px;}
 .g-landlords-right-avatar{right:0px;top:50px;background-position:-200px 0px;}
+.g-landlords-right-avatar .g-landholder{right:15px;left:auto;}
+.g-landlords-right-avatar .g-score{left:20px;right:auto;}
 .g-landlords-right-name{right:0px;top:230px;}
 .g-landlords-right-number{right:70px;top:270px;z-index:50;}
 .g-landlords-right-timer{right:280px;top:180px;z-index:50;}
@@ -54,13 +57,13 @@
 .g-landlords-btn-not-call{left:50%;bottom:185px;width:85px;margin-left:30px;background-position:0px -600px;}
 .g-landlords-btn-not-call.hover{background-position:-150px -600px;}
 .g-landlords-btn-not-call.disabled{background-position:-300px -600px !important;cursor:default;}
-.g-landlords-btn-not-lead{left:512px;bottom:185px;width:85px;margin-left:-142px;background-position:0px -650px;}
+.g-landlords-btn-not-lead{left:512px;bottom:185px;width:85px;margin-left:61px;background-position:0px -650px;}
 .g-landlords-btn-not-lead.hover{background-position:-150px -650px;}
 .g-landlords-btn-not-lead.disabled{background-position:-300px -650px !important;cursor:default;}
 .g-landlords-btn-prompt{left:512px;bottom:185px;width:85px;margin-left:-41px;background-position:0px -700px;}
 .g-landlords-btn-prompt.hover{background-position:-150px -700px;}
 .g-landlords-btn-prompt.disabled{background-position:-300px -700px !important;cursor:default;}
-.g-landlords-btn-lead{left:512px;bottom:185px;width:85px;margin-left:61px;background-position:0px -750px;}
+.g-landlords-btn-lead{left:512px;bottom:185px;width:85px;margin-left:-142px;background-position:0px -750px;}
 .g-landlords-btn-lead.hover{background-position:-150px -750px;}
 .g-landlords-btn-lead.disabled{background-position:-300px -750px !important;cursor:default;}
 .g-landlords-btn-change{left:50%;top:50%;width:85px;margin-left:-42px;margin-top:-22px;background-position:0px -800px;}
@@ -69,15 +72,15 @@
 .g-landlords-btn-logout{left:50%;top:50%;width:85px;margin-left:52px;margin-top:-22px;background-position:0px -1720px;}
 .g-landlords-btn-logout.hover{background-position:-150px -1720px;}
 .g-landlords-btn-logout.disabled{background-position:-300px -1720px !important;cursor:default;}
-.g-landlords-btn-seed-cards{left:50%;top:50%;width:85px;margin-left:-185px;margin-top:-22px;background-position:0px -1770px;}
+.g-landlords-btn-seed-cards{left:50%;bottom:185px;width:85px;margin-left:-145px;margin-top:-22px;background-position:0px -1770px;}
 .g-landlords-btn-seed-cards.hover{background-position:-150px -1770px;}
 .g-landlords-btn-seed-cards.disabled{background-position:-300px -1770px !important;cursor:default;}
-.g-landlords-btn-double{left:50%;top:50%;width:85px;margin-left:-85px;margin-top:-22px;background-position:0px -1820px;}
+.g-landlords-btn-double{left:50%;bottom:185px;width:85px;margin-left:-45px;margin-top:-22px;background-position:0px -1820px;}
 .g-landlords-btn-double.hover{background-position:-150px -1820px;}
 .g-landlords-btn-double.disabled{background-position:-300px -1820px !important;cursor:default;}
-.g-landlords-btn-super-double{left:50%;top:50%;width:171px;margin-left:15px;margin-top:-22px;background-position:0px -1870px;}
-.g-landlords-btn-super-double.hover{background-position:-200px -1870px;}
-.g-landlords-btn-super-double.disabled{background-position:-400px -1870px !important;cursor:default;}
+.g-landlords-btn-no-double{left:50%;bottom:185px;width:130px;margin-left:55px;margin-top:-22px;background-position:0px -1870px;}
+.g-landlords-btn-no-double.hover{background-position:-150px -1870px;}
+.g-landlords-btn-no-double.disabled{background-position:-300px -1870px !important;cursor:default;}
 
 .login-and-register-form{position:absolute;left:50%;top:50%;width:460px;height:310px;margin-left:-230px;margin-top:-155px;background-position:0px -860px;}
 .login-and-register-form span{position:absolute;left:49px;top:20px;z-index:1;width:120px;height:33px;overflow:hidden;cursor:pointer;text-indent:-1000px;}

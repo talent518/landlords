@@ -1,11 +1,12 @@
 (function($) {
 	const ACTION_TYPE_ROB_LANDLORDS = 1; // 抢地主，isRobot(是否机器人处理)
 	const ACTION_TYPE_NO_ROB = 2; // 不抢
-	const ACTION_TYPE_SEED_CARDS = 3; // 明牌
-	const ACTION_TYPE_DOUBLE = 4; // 加倍
-	const ACTION_TYPE_SUPER_DOUBLE = 5; // 超级加倍
-	const ACTION_TYPE_LEAD = 6; // 出牌，字段：deskPosition(桌位)，beforeCards(出牌前手中的牌)，leads(出的牌)，isRobot(是否机器人处理)
-	const ACTION_TYPE_NO_LEAD = 7; // 不出
+	const ACTION_TYPE_LANDLORDS = 3; // 确定地主
+	const ACTION_TYPE_SEED_CARDS = 4; // 明牌
+	const ACTION_TYPE_DOUBLE = 5; // 加倍
+	const ACTION_TYPE_NO_DOUBLE = 6; // 不加倍
+	const ACTION_TYPE_LEAD = 7; // 出牌，字段：deskPosition(桌位)，beforeCards(出牌前手中的牌)，leads(出的牌)，isRobot(是否机器人处理)
+	const ACTION_TYPE_NO_LEAD = 8; // 不出
 
 	/**
 	 * 反转数组
@@ -305,6 +306,7 @@
 
 			self.playerElem = $('<div class="g-landlords-player" style="padding-left:' + $.landlordsGlobalOptions.paddingLeftOrTop + ';"></div>').appendTo(self.wrapperElem);
 			self.playerAvatarElem = $('<div class="g-landlords-icons g-landlords-avatar g-landlords-player-avatar"></div>').appendTo(self.wrapperElem);
+			self.playerLandholderElem = $('<div class="g-landholder" title="地主"></div>').appendTo(self.playerAvatarElem);
 			self.playerScoreElem = $('<div class="g-score"></div>').appendTo(self.playerAvatarElem);
 			self.playerNameElem = $('<div class="g-landlords-name g-landlords-player-name"><span class="mask"></span><a class="name" href="#" title="玩家一">玩家一</a></div>').appendTo(self.wrapperElem);
 			self.playerNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-player-number">0</div>').appendTo(self.wrapperElem);
@@ -313,6 +315,7 @@
 
 			self.leftElem = $('<div class="g-landlords-left" style="padding-top:' + $.landlordsGlobalOptions.paddingLeftOrTopPercent + ';"></div>').appendTo(self.wrapperElem);
 			self.leftAvatarElem = $('<div class="g-landlords-icons g-landlords-avatar g-landlords-left-avatar"></div>').appendTo(self.wrapperElem);
+			self.leftLandholderElem = $('<div class="g-landholder" title="地主"></div>').appendTo(self.leftAvatarElem);
 			self.leftScoreElem = $('<div class="g-score"></div>').appendTo(self.leftAvatarElem);
 			self.leftNameElem = $('<div class="g-landlords-name g-landlords-left-name"><span class="mask"></span><a class="name" href="#" title="玩家三">玩家三</a></div>').appendTo(self.wrapperElem);
 			self.leftNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-left-number">0</div>').appendTo(self.wrapperElem);
@@ -321,6 +324,7 @@
 
 			self.rightElem = $('<div class="g-landlords-right" style="padding-top:' + $.landlordsGlobalOptions.paddingLeftOrTopPercent + ';"></div>').appendTo(self.wrapperElem);
 			self.rightAvatarElem = $('<div class="g-landlords-icons g-landlords-avatar g-landlords-right-avatar"></div>').appendTo(self.wrapperElem);
+			self.rightLandholderElem = $('<div class="g-landholder" title="地主"></div>').appendTo(self.rightAvatarElem);
 			self.rightScoreElem = $('<div class="g-score"></div>').appendTo(self.rightAvatarElem);
 			self.rightNameElem = $('<div class="g-landlords-name g-landlords-right-name"><span class="mask"></span><a class="name" href="#" title="玩家二">玩家二</a></div>').appendTo(self.wrapperElem);
 			self.rightNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-right-number">0</div>').appendTo(self.wrapperElem);
@@ -337,7 +341,7 @@
 			self.btnLogoutElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-logout">退出</button>').appendTo(self.wrapperElem);
 			self.btnSeedCardsElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-seed-cards">明牌</button>').appendTo(self.wrapperElem);
 			self.btnDoubleElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-double">加倍</button>').appendTo(self.wrapperElem);
-			self.btnSuperDoubleElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-super-double">超级加倍</button>').appendTo(self.wrapperElem);
+			self.btnNoDoubleElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-no-double">不加倍</button>').appendTo(self.wrapperElem);
 			self.btnElems = $('.g-landlords-button', self.wrapperElem);
 
 			$('.g-landlords-name,.g-landlords-button,.g-close', self.wrapperElem).hover(function(){
@@ -389,7 +393,7 @@
 				self.post('Double');
 			});
 
-			self.btnSuperDoubleElem.click(function() {
+			self.btnNoDoubleElem.click(function() {
 				self.post('superDouble');
 			});
 
@@ -571,8 +575,13 @@
 				};
 				settings = {};
 			}
-
-			self.loadingElem.show();
+			
+			if(self.loadingCounter) {
+				self.loadingCounter++;
+			} else {
+				self.loadingCounter = 1;
+				self.loadingElem.show();
+			}
 
 			$.ajax({
 				global: false,
@@ -598,7 +607,10 @@
 					self.message(xhr.responseText);
 				},
 				complete: function() {
-					self.loadingElem.hide();
+					self.loadingCounter--;
+					if(!self.loadingCounter) {
+						self.loadingElem.hide();
+					}
 				}
 			});
 		},
@@ -624,7 +636,7 @@
 			};
 			
 			if(isNaN(seconds)) {
-				seconds = 30;
+				seconds = self.isPlaying === 2 ? 10 : 30;
 			}
 			elems.text(seconds);
 
@@ -693,6 +705,11 @@
 				if(cards && cards.length) {
 					self.playerArray = cards.split(',');
 				}
+				if(self.playerPosition === json.landlordPosition) {
+					self.playerLandholderElem.show();
+				} else {
+					self.playerLandholderElem.hide();
+				}
 				if(json[self.rightPosition + 'Uid']) {
 					self.rightAvatarElem.show();
 					self.rightNameElem.show();
@@ -711,6 +728,12 @@
 					cards = json[self.rightPosition + 'Cards'];
 					if(cards && cards.length) {
 						self.rightArray = cards.split(',');
+					}
+
+					if(self.rightPosition === json.landlordPosition) {
+						self.rightLandholderElem.show();
+					} else {
+						self.rightLandholderElem.hide();
 					}
 				}
 				if(json[self.leftPosition + 'Uid']) {
@@ -731,6 +754,12 @@
 					cards = json[self.leftPosition + 'Cards'];
 					if(cards && cards.length) {
 						self.leftArray = cards.split(',');
+					}
+
+					if(self.leftPosition === json.landlordPosition) {
+						self.leftLandholderElem.show();
+					} else {
+						self.leftLandholderElem.hide();
 					}
 				}
 
@@ -782,14 +811,31 @@
 					case ACTION_TYPE_NO_ROB:
 						msg = '不抢';
 						break;
+					case ACTION_TYPE_LANDLORDS:
+						if(self.playerPosition === json.landlordPosition) {
+							self.playerLandholderElem.show();
+						} else {
+							self.playerLandholderElem.hide();
+						}
+						if(self.rightPosition === json.landlordPosition) {
+							self.rightLandholderElem.show();
+						} else {
+							self.rightLandholderElem.hide();
+						}
+						if(self.leftPosition === json.landlordPosition) {
+							self.leftLandholderElem.show();
+						} else {
+							self.leftLandholderElem.hide();
+						}
+						return;
 					case ACTION_TYPE_SEED_CARDS:
 						msg = '明牌';
 						break;
 					case ACTION_TYPE_DOUBLE:
 						msg = '加倍';
 						break;
-					case ACTION_TYPE_SUPER_DOUBLE:
-						msg = '超级加倍';
+					case ACTION_TYPE_NO_DOUBLE:
+						msg = '不加倍';
 						break;
 					case ACTION_TYPE_LEAD:
 						msg = '出牌';
@@ -801,22 +847,27 @@
 				switch(v.weightPosition) {
 					case self.playerPosition:
 						self.btnElems.hide().disabled(false);
+
 						self.playerMsgElem.text(msg);
 						self.playerDownTimer.clean();
+
 						self.rightMsgElem.text('');
 						self.rightDownTimer = self.downTimer(self.rightTimerElem.show());
 						break;
 					case self.rightPosition:
 						self.rightMsgElem.text(msg);
 						self.rightDownTimer.clean();
+
 						self.leftMsgElem.text('');
 						self.leftDownTimer = self.downTimer(self.leftTimerElem.show());
 						break;
 					case self.leftPosition:
 						self.leftMsgElem.text(msg);
 						self.leftDownTimer.clean();
+
 						self.playerMsgElem.text('');
 						self.playerDownTimer = self.downTimer(self.playerTimerElem.show(), function(){self.post('timeout');});
+
 						self.renderBtn(json.isPlaying);
 						break;
 				}
@@ -826,7 +877,7 @@
 			clearTimeout(self.processTimer);
 			self.processTimer = setTimeout(function() {
 				self.post('process', {maxLogId: self.maxLogId});
-			}, 500);
+			}, 1000);
 		},
 		start: function() {
 			var self = this;
@@ -915,12 +966,13 @@
 					self.btnNotCallElem.show();
 					break;
 				}
-				case -1: { // 明牌、加倍、超级加倍
-					self.btnCallElem.show();
-					self.btnNotCallElem.show();
+				case 2: { // 明牌、加倍、不加倍
+					self.btnSeedCardsElem.show();
+					self.btnDoubleElem.show();
+					self.btnNoDoubleElem.show();
 					break;
 				}
-				case 2: {
+				case 3: {
 					self.btnLeadElem.show();
 					self.btnNotLeadElem.show();
 					self.btnPromptElem.show();

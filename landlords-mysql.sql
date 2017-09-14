@@ -28,8 +28,9 @@ CREATE TABLE `desk_action_logs` (
   `isRobot` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '是否机器人处理',
   `dateline` int(10) NOT NULL COMMENT '出牌时间戳',
   `createTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '出牌时间',
-  PRIMARY KEY (`logId`)
-) ENGINE=MyISAM AUTO_INCREMENT=25 DEFAULT CHARSET=utf8 COMMENT='桌位玩家出牌日志表';
+  PRIMARY KEY (`logId`),
+  KEY `deskId` (`deskId`,`openGames`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='桌位玩家出牌日志表';
 
 /*Table structure for table `desks` */
 
@@ -71,7 +72,7 @@ CREATE TABLE `desks` (
   `cards` varchar(10) DEFAULT NULL COMMENT '底牌',
   PRIMARY KEY (`deskId`),
   KEY `players` (`players`,`deskId`)
-) ENGINE=MyISAM AUTO_INCREMENT=51 DEFAULT CHARSET=utf8 MIN_ROWS=50 COMMENT='牌桌主表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 MIN_ROWS=50 COMMENT='牌桌主表';
 
 /*Table structure for table `user_score_logs` */
 
@@ -87,7 +88,7 @@ CREATE TABLE `user_score_logs` (
   `dateline` int(10) NOT NULL COMMENT '得分时间戳',
   `createTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '得分时间',
   PRIMARY KEY (`logId`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='用户桌位得分日志表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='用户桌位得分日志表';
 
 /*Table structure for table `users` */
 
@@ -109,7 +110,7 @@ CREATE TABLE `users` (
   PRIMARY KEY (`uid`),
   UNIQUE KEY `username` (`username`),
   KEY `username_password` (`username`,`password`)
-) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=utf8 COMMENT='用户主表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='用户主表';
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
