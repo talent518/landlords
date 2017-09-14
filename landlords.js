@@ -803,7 +803,9 @@
 			var self = this
 
 			$.each(json.actions, function(k, v) {
-				var msg = false;
+				var msg = '';
+				var isKeep = false;
+
 				switch(v.actionType) {
 					case ACTION_TYPE_ROB_LANDLORDS:
 						msg = '叫地主';
@@ -812,24 +814,80 @@
 						msg = '不抢';
 						break;
 					case ACTION_TYPE_LANDLORDS:
-						if(self.playerPosition === json.landlordPosition) {
+						var cards = v.beforeCards.split(',');
+						var nCards = 'NN,NN,NN'.split(',');
+
+						if(self.playerPosition === v.weightPosition) {
 							self.playerLandholderElem.show();
+
+							self.playerArray = self.playerArray.concat(cards);
+							self.playerArray.sort(function(a, b) {
+								return $.landlordsGlobalOptions.puke54Object[b].sort - $.landlordsGlobalOptions.puke54Object[a].sort;
+							});
+							self.renderPlayer();
+							self.resizePlayer();
+
+							self.playerNumberElem.text(self.playerArray.length);
 						} else {
 							self.playerLandholderElem.hide();
 						}
-						if(self.rightPosition === json.landlordPosition) {
+
+						if(self.rightPosition === v.weightPosition) {
 							self.rightLandholderElem.show();
+
+							self.rightArray = self.rightArray.concat((self.rightArray[0] === 'NN') ? nCards : cards);
+							if(self.rightArray[0] !== 'NN') {
+								self.rightArray.sort(function(a, b) {
+									return $.landlordsGlobalOptions.puke54Object[b].sort - $.landlordsGlobalOptions.puke54Object[a].sort;
+								});
+							}
+							self.renderRight();
+
+							self.rightNumberElem.text(self.rightArray.length);
 						} else {
 							self.rightLandholderElem.hide();
 						}
-						if(self.leftPosition === json.landlordPosition) {
+
+						if(self.leftPosition === v.weightPosition) {
 							self.leftLandholderElem.show();
+
+							self.leftArray = self.leftArray.concat((self.leftArray[0] === 'NN') ? nCards : cards);
+							if(self.leftArray[0] !== 'NN') {
+								self.leftArray.sort(function(a, b) {
+									return $.landlordsGlobalOptions.puke54Object[b].sort - $.landlordsGlobalOptions.puke54Object[a].sort;
+								});
+							}
+							self.renderLeft();
+
+							self.leftNumberElem.text(self.leftArray.length);
 						} else {
 							self.leftLandholderElem.hide();
 						}
-						return;
+
+						self.cardsArray = cards;
+						self.cardsArray.sort(function(a, b) {
+							return $.landlordsGlobalOptions.puke54Object[b].sort - $.landlordsGlobalOptions.puke54Object[a].sort;
+						});
+						self.renderCards();
+
+						isKeep = true;
+						break;
+
 					case ACTION_TYPE_SEED_CARDS:
-						msg = '明牌';
+						if(self.rightPosition === v.weightPosition) {
+							self.rightArray = v.beforeCards.split(',');
+							self.rightArray.sort(function(a, b) {
+								return $.landlordsGlobalOptions.puke54Object[b].sort - $.landlordsGlobalOptions.puke54Object[a].sort;
+							});
+							self.renderRight();
+						}
+						if(self.leftPosition === v.weightPosition) {
+							self.leftArray = v.beforeCards.split(',');
+							self.leftArray.sort(function(a, b) {
+								return $.landlordsGlobalOptions.puke54Object[b].sort - $.landlordsGlobalOptions.puke54Object[a].sort;
+							});
+							self.renderLeft();
+						}
 						break;
 					case ACTION_TYPE_DOUBLE:
 						msg = '加倍';
@@ -850,25 +908,47 @@
 
 						self.playerMsgElem.text(msg);
 						self.playerDownTimer.clean();
+						
+						if(isKeep) {
+							self.rightDownTimer.clean();
+							self.leftDownTimer.clean();
 
-						self.rightMsgElem.text('');
-						self.rightDownTimer = self.downTimer(self.rightTimerElem.show());
+							self.playerDownTimer = self.downTimer(self.playerTimerElem.show(), function(){self.post('timeout');});
+							self.renderBtn(json.isPlaying);
+						} else {
+							self.rightMsgElem.text('');
+							self.rightDownTimer = self.downTimer(self.rightTimerElem.show());
+						}
 						break;
 					case self.rightPosition:
 						self.rightMsgElem.text(msg);
 						self.rightDownTimer.clean();
 
-						self.leftMsgElem.text('');
-						self.leftDownTimer = self.downTimer(self.leftTimerElem.show());
+						if(isKeep) {
+							self.playerDownTimer.clean();
+							self.leftDownTimer.clean();
+
+							self.rightDownTimer = self.downTimer(self.rightTimerElem.show());
+						} else {
+							self.leftMsgElem.text('');
+							self.leftDownTimer = self.downTimer(self.leftTimerElem.show());
+						}
 						break;
 					case self.leftPosition:
 						self.leftMsgElem.text(msg);
 						self.leftDownTimer.clean();
 
-						self.playerMsgElem.text('');
-						self.playerDownTimer = self.downTimer(self.playerTimerElem.show(), function(){self.post('timeout');});
+						if(isKeep) {
+							self.playerDownTimer.clean();
+							self.rightDownTimer.clean();
 
-						self.renderBtn(json.isPlaying);
+							self.leftDownTimer = self.downTimer(self.leftTimerElem.show());
+						} else {
+							self.playerMsgElem.text('');
+							self.playerDownTimer = self.downTimer(self.playerTimerElem.show(), function(){self.post('timeout');});
+
+							self.renderBtn(json.isPlaying);
+						}
 						break;
 				}
 				self.maxLogId = Math.max(self.maxLogId, v.logId);

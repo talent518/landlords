@@ -982,7 +982,7 @@ function updateNextWeightPosition($deskId, $deskPosition) {
 	return prepare($sql, $params);
 }
 
-function callLandlords($uid, $deskId, $openGames, $deskPosition, $isRob=0) {
+function callLandlords($uid, $deskId, $openGames, $deskPosition, $cards, $isRob=0) {
 	$sql = 'INSERT INTO desk_action_logs (uid, deskId, openGames, actionType, weightPosition, dateline, createTime)VALUES(?, ?, ?, ?, ?, UNIX_TIMESTAMP(), NOW())';
 	$params = array($uid, $deskId, $openGames, $isRob ? ACTION_TYPE_ROB_LANDLORDS : ACTION_TYPE_NO_ROB, $deskPosition);
 	prepare($sql, $params);
@@ -1008,11 +1008,11 @@ function callLandlords($uid, $deskId, $openGames, $deskPosition, $isRob=0) {
 	}
 
 	if($robs === 1 || ($robs>1 && $rowCount === 4)) {
-		$sql = 'INSERT INTO desk_action_logs (uid, deskId, openGames, actionType, weightPosition, dateline, createTime)VALUES(?, ?, ?, ?, ?, UNIX_TIMESTAMP(), NOW())';
-		$params = array($lastRobRow->uid, $deskId, $openGames, ACTION_TYPE_LANDLORDS, $lastRobRow->weightPosition);
+		$sql = 'INSERT INTO desk_action_logs (uid, deskId, openGames, actionType, weightPosition, beforeCards, dateline, createTime)VALUES(?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), NOW())';
+		$params = array($lastRobRow->uid, $deskId, $openGames, ACTION_TYPE_LANDLORDS, $lastRobRow->weightPosition, $cards);
 		prepare($sql, $params);
 
-		$sql = 'UPDATE desks SET isPlaying = 2, weightPosition = ?, weightDateline=UNIX_TIMESTAMP(), weightTime=NOW(), landlordPosition = ? WHERE deskId = ?';
+		$sql = 'UPDATE desks SET isPlaying = 2, weightPosition = ?, weightDateline=UNIX_TIMESTAMP(), weightTime=NOW(), landlordPosition = ?, ' . $deskPosition . 'Cards=CONCAT(' . $deskPosition . 'Cards, \',\', cards)  WHERE deskId = ?';
 		$params = array($lastRobRow->weightPosition, $lastRobRow->weightPosition, $deskId);
 		prepare($sql, $params);
 	} else {
@@ -1023,9 +1023,9 @@ function callLandlords($uid, $deskId, $openGames, $deskPosition, $isRob=0) {
 }
 
 function actionCall($uid, $deskId, $deskPosition, $isRob) {
-	$sql = 'SELECT isPlaying, openGames, weightPosition, ' . $deskPosition . 'Uid FROM desks WHERE deskId=?';
+	$sql = 'SELECT isPlaying, openGames, weightPosition, ' . $deskPosition . 'Uid, cards FROM desks WHERE deskId=?';
 	$params = array($deskId);
-	list($isPlaying, $openGames, $weightPosition, $pUid) = prepare($sql, $params)->fetch(PDO::FETCH_NUM);
+	list($isPlaying, $openGames, $weightPosition, $pUid, $cards) = prepare($sql, $params)->fetch(PDO::FETCH_NUM);
 	if($isPlaying != 1 || $deskPosition !== $weightPosition || $pUid != $uid) {
 		return array(
 			'eval' => 'this.message("还没轮到你操作呢！")',
@@ -1033,7 +1033,7 @@ function actionCall($uid, $deskId, $deskPosition, $isRob) {
 	}
 
 	return array(
-		'status' => callLandlords($uid, $deskId, $openGames, $deskPosition, $isRob),
+		'status' => callLandlords($uid, $deskId, $openGames, $deskPosition, $cards, $isRob),
 		'eval'=>'this.btnElems.hide();this.playerDownTimer.clean();'
 	);
 }
@@ -1163,7 +1163,7 @@ function actionTimeout($uid, $deskId, $deskPosition) {
 
 	$status = NULL;
 	if($desk->isPlaying == 1) {
-		$status = callLandlords($uid, $deskId, $desk->openGames, $deskPosition);
+		$status = callLandlords($uid, $deskId, $desk->openGames, $deskPosition, $desk->cards);
 	} elseif($desk->isPlaying == 2) {
 		$sql = 'INSERT INTO desk_action_logs (uid, deskId, openGames, actionType, weightPosition, dateline, createTime)VALUES(?, ?, ?, ?, ?, UNIX_TIMESTAMP(), NOW())';
 		$params = array($uid, $deskId, $desk->openGames, ACTION_TYPE_NO_DOUBLE, $deskPosition);
