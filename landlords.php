@@ -20,6 +20,7 @@ try {
     exit;
 }
 
+$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdo->exec('SET NAMES \'utf8\'');
 
 if(isset($_REQUEST['action']) && function_exists($action = 'action' . ucfirst($_REQUEST['action']))) {
@@ -59,10 +60,27 @@ if(isset($_REQUEST['action']) && function_exists($action = 'action' . ucfirst($_
 		$pdo->commit();
 
 		renderJson($json);
+	} catch(SQLException $e) {
+		try {
+			$pdo->rollBack();
+		} catch(PDOException $e2) {}
+
+		echo 'Error: ', $e->getMessage(), PHP_EOL, 'SQL: ', $e->sql, PHP_EOL, '错误代码: ', $e->errorCode, PHP_EOL, '错误消息：', var_export($e->errorInfo, true), PHP_EOL, PHP_EOL, $e->getTraceAsString(), PHP_EOL, PHP_EOL;
+		debug_print_backtrace();
 	} catch(Exception $e) {
-		$pdo->rollBack();
-		echo 'Error: ', $e->getMessage(), PHP_EOL;
-		exit($e->getTraceAsString());
+		try {
+			$pdo->rollBack();
+		} catch(PDOException $e2) {}
+
+		echo 'Error: ', $e->getMessage(), PHP_EOL, PHP_EOL, $e->getTraceAsString(), PHP_EOL, PHP_EOL;
+		debug_print_backtrace();
+	} catch(Error $e) {
+		try {
+			$pdo->rollBack();
+		} catch(PDOException $e2) {}
+
+		echo 'Error: ', $e->getMessage(), PHP_EOL, PHP_EOL, $e->getTraceAsString(), PHP_EOL, PHP_EOL;
+		debug_print_backtrace();
 	}
 } else {
 	exit('无效的请求！');
@@ -74,22 +92,27 @@ function renderJson($json) {
 	exit(json_encode($json));
 }
 
+class SQLException extends Exception {
+	public $sql, $errorCode, $errorInfo;
+	public function __construct($sql, $errorCode, $errorInfo, $message) {
+		$this->sql = $sql;
+		$this->errorCode = $errorCode;
+		$this->errorInfo = $errorInfo;
+
+		parent::__construct($message);
+	}
+}
+
 function prepare($sql, array $params = array()) {
 	global $pdo;
 
 	try {
 		$stmt = $pdo->prepare($sql);
-		if(!$stmt->execute($params)) {
-			echo 'SQL: ', $sql, PHP_EOL, '错误代码: ', $stmt->errorCode(), PHP_EOL, '错误消息：', $stmt->errorInfo()[2], PHP_EOL, PHP_EOL;
-			debug_print_backtrace();
-			exit;
-		}
+		$stmt->execute($params);
 
 		return $stmt;
 	} catch(PDOException $e) {
-		echo 'SQL: ', $sql, PHP_EOL, '错误代码: ', $e->getCode(), PHP_EOL, '错误消息：', $e->getMessage(), PHP_EOL, PHP_EOL, $e->getTraceAsString(), PHP_EOL, PHP_EOL;
-		debug_print_backtrace();
-		exit;
+		throw new SQLException($sql, $e->getCode(), $e->errorInfo, $e->getMessage());
 	}
 }
 
@@ -959,7 +982,13 @@ function updateNextWeightPosition($deskId, $deskPosition) {
 	return prepare($sql, $params);
 }
 
-function confirmLandlords($deskId, $openGames) {
+function callLandlords($uid, $deskId, $openGames, $deskPosition, $isRob=0) {
+	$sql = 'INSERT INTO desk_action_logs (uid, deskId, openGames, actionType, weightPosition, dateline, createTime)VALUES(?, ?, ?, ?, ?, UNIX_TIMESTAMP(), NOW())';
+	$params = array($uid, $deskId, $openGames, $isRob ? ACTION_TYPE_ROB_LANDLORDS : ACTION_TYPE_NO_ROB, $deskPosition);
+	prepare($sql, $params);
+
+	updateNextWeightPosition($deskId, $deskPosition);
+
 	$sql = 'SELECT uid,actionType,weightPosition FROM desk_action_logs WHERE deskId=? AND openGames=? AND actionType IN(?,?) ORDER BY logId';
 	$params = array($deskId, $openGames, ACTION_TYPE_ROB_LANDLORDS, ACTION_TYPE_NO_ROB);
 	$stmt = prepare($sql, $params);
@@ -1000,17 +1029,84 @@ function actionCall($uid, $deskId, $deskPosition, $isRob) {
 	if($isPlaying != 1 || $deskPosition !== $weightPosition || $pUid != $uid) {
 		return array(
 			'eval' => 'this.message("还没轮到你操作呢！")',
-		);
+		)/* + get_defined_vars()*/;
 	}
 
-	$sql = 'INSERT INTO desk_action_logs (uid, deskId, openGames, actionType, weightPosition, dateline, createTime)VALUES(?, ?, ?, ?, ?, UNIX_TIMESTAMP(), NOW())';
-	$params = array($uid, $deskId, $openGames, $isRob ? ACTION_TYPE_ROB_LANDLORDS : ACTION_TYPE_NO_ROB, $weightPosition);
+	return array(
+		'status' => callLandlords($uid, $deskId, $openGames, $deskPosition, $isRob),
+		'eval'=>'this.btnElems.hide();this.playerDownTimer.clean();'
+	);
+}
+
+function actionSeedCards($uid, $deskId, $deskPosition) {
+	$sql = 'SELECT isPlaying, openGames, weightPosition, ' . $deskPosition . 'Uid, ' . $deskPosition . 'Cards FROM desks WHERE deskId=?';
+	$params = array($deskId);
+	list($isPlaying, $openGames, $weightPosition, $pUid, $pCards) = prepare($sql, $params)->fetch(PDO::FETCH_NUM);
+	if($isPlaying != 2 || $deskPosition !== $weightPosition || $pUid != $uid) {
+		return array(
+			'eval' => 'this.message("还没轮到你操作呢！")',
+		)/* + get_defined_vars()*/;
+	}
+
+	$sql = 'INSERT INTO desk_action_logs (uid, deskId, openGames, actionType, weightPosition, beforeCards, dateline, createTime)VALUES(?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), NOW())';
+	$params = array($uid, $deskId, $openGames, ACTION_TYPE_SEED_CARDS, $weightPosition, $pCards);
+	prepare($sql, $params);
+
+	$sql = 'UPDATE desks SET ' . $deskPosition . 'IsSeed=1 WHERE deskId=?';
+	$params = array($deskId);
 	prepare($sql, $params);
 
 	updateNextWeightPosition($deskId, $deskPosition);
 
 	return array(
-		'status' => confirmLandlords($deskId, $openGames),
+		'status' => confirmDouble($deskId, $openGames),
+		'eval'=>'this.btnElems.hide();this.playerDownTimer.clean();'
+	);
+}
+
+function actionDouble($uid, $deskId, $deskPosition, $isDouble) {
+	$sql = 'SELECT isPlaying, openGames, weightPosition, ' . $deskPosition . 'Uid FROM desks WHERE deskId=?';
+	$params = array($deskId);
+	list($isPlaying, $openGames, $weightPosition, $pUid) = prepare($sql, $params)->fetch(PDO::FETCH_NUM);
+	if($isPlaying != 2 || $deskPosition !== $weightPosition || $pUid != $uid) {
+		return array(
+			'eval' => 'this.message("还没轮到你操作呢！")',
+		)/* + get_defined_vars()*/;
+	}
+
+	$sql = 'INSERT INTO desk_action_logs (uid, deskId, openGames, actionType, weightPosition, dateline, createTime)VALUES(?, ?, ?, ?, ?, UNIX_TIMESTAMP(), NOW())';
+	$params = array($uid, $deskId, $openGames, $isDouble ? ACTION_TYPE_DOUBLE : ACTION_TYPE_NO_DOUBLE, $weightPosition);
+	prepare($sql, $params);
+
+	updateNextWeightPosition($deskId, $deskPosition);
+
+	return array(
+		'status' => confirmDouble($deskId, $openGames),
+		'eval'=>'this.btnElems.hide();this.playerDownTimer.clean();'
+	);
+}
+
+function notLead($uid, $deskId, $openGames, $deskPosition) {
+	$sql = 'INSERT INTO desk_action_logs (uid, deskId, openGames, actionType, weightPosition, dateline, createTime)VALUES(?, ?, ?, ?, ?, UNIX_TIMESTAMP(), NOW())';
+	$params = array($uid, $deskId, $openGames, ACTION_TYPE_NO_LEAD, $deskPosition);
+	prepare($sql, $params);
+
+	updateNextWeightPosition($deskId, $deskPosition);
+}
+
+function actionNotLead($uid, $deskId, $deskPosition) {
+	$sql = 'SELECT isPlaying, openGames, weightPosition, ' . $deskPosition . 'Uid FROM desks WHERE deskId=?';
+	$params = array($deskId);
+	list($isPlaying, $openGames, $weightPosition, $pUid) = prepare($sql, $params)->fetch(PDO::FETCH_NUM);
+	if($isPlaying != 3 || $deskPosition !== $weightPosition || $pUid != $uid) {
+		return array(
+			'eval' => 'this.message("还没轮到你操作呢！")',
+		)/* + get_defined_vars()*/;
+	}
+
+	notLead($uid, $deskId, $openGames, $deskPosition);
+
+	return array(
 		'eval'=>'this.btnElems.hide();this.playerDownTimer.clean();'
 	);
 }
@@ -1062,18 +1158,12 @@ function actionTimeout($uid, $deskId, $deskPosition) {
 	if($deskPosition !== $desk->weightPosition || $desk->{$deskPosition . 'Uid'} != $uid) {
 		return array(
 			'eval' => 'this.message("还没轮到你操作呢！")',
-		) + get_defined_vars();
+		)/* + get_defined_vars()*/;
 	}
 
 	$status = NULL;
 	if($desk->isPlaying == 1) {
-		$sql = 'INSERT INTO desk_action_logs (uid, deskId, openGames, actionType, weightPosition, dateline, createTime)VALUES(?, ?, ?, ?, ?, UNIX_TIMESTAMP(), NOW())';
-		$params = array($uid, $deskId, $desk->openGames, ACTION_TYPE_NO_ROB, $deskPosition);
-		prepare($sql, $params);
-
-		updateNextWeightPosition($deskId, $deskPosition);
-
-		$status = confirmLandlords($deskId, $openGames);
+		$status = callLandlords($uid, $deskId, $desk->openGames, $deskPosition);
 	} elseif($desk->isPlaying == 2) {
 		$sql = 'INSERT INTO desk_action_logs (uid, deskId, openGames, actionType, weightPosition, dateline, createTime)VALUES(?, ?, ?, ?, ?, UNIX_TIMESTAMP(), NOW())';
 		$params = array($uid, $deskId, $desk->openGames, ACTION_TYPE_NO_DOUBLE, $deskPosition);
@@ -1082,12 +1172,8 @@ function actionTimeout($uid, $deskId, $deskPosition) {
 		updateNextWeightPosition($deskId, $deskPosition);
 
 		$status = confirmDouble($deskId, $desk->openGames);
-	} elseif($desk->isPlaying === 3) {
-		$sql = 'INSERT INTO desk_action_logs (uid, deskId, openGames, actionType, weightPosition, dateline, createTime)VALUES(?, ?, ?, ?, ?, UNIX_TIMESTAMP(), NOW())';
-		$params = array($uid, $deskId, $desk->openGames, ACTION_TYPE_NO_LEAD, $deskPosition);
-		prepare($sql, $params);
-
-		updateNextWeightPosition($deskId, $deskPosition);
+	} elseif($desk->isPlaying == 3) {
+		notLead($uid, $deskId, $desk->openGames, $deskPosition);
 	}
 
 	return array(

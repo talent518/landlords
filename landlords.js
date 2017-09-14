@@ -374,7 +374,7 @@
 			});
 
 			self.btnLeadElem.click(function() {
-				self.post('lead');
+				self.message('lead',0,1);
 			});
 
 			self.btnNotLeadElem.click(function() {
@@ -382,7 +382,7 @@
 			});
 
 			self.btnPromptElem.click(function() {
-				self.post('prompt');
+				self.message('prompt',0,1);
 			});
 
 			self.btnSeedCardsElem.click(function() {
@@ -390,11 +390,11 @@
 			});
 
 			self.btnDoubleElem.click(function() {
-				self.post('Double');
+				self.post('double', {isDouble:1});
 			});
 
 			self.btnNoDoubleElem.click(function() {
-				self.post('superDouble');
+				self.post('double', {isDouble:0});
 			});
 
 			$(window).unload(function() {
