@@ -87,23 +87,23 @@
 	$.landlordsGlobalOptions.puke54BackgroundStyleArray = $.initArray([5,13], function(y, x) {
 		if(y == 4) {
 			if(x == 0) {
-				$.landlordsGlobalOptions.puke54Object.BJ = {
-					title: '大王(big joker)',
+				$.landlordsGlobalOptions.puke54Object.BW = {
+					title: '大王(big wang)',
 					Y: 4,
 					X: 0,
 					sort: 47,
 					points: pointsString.charAt(17)
 				};
-				// console.log($.landlordsGlobalOptions.puke54Object.BJ);
+				// console.log($.landlordsGlobalOptions.puke54Object.BW);
 			} else if(x == 1) {
-				$.landlordsGlobalOptions.puke54Object.LJ = {
-					title: '小王(little joker)',
+				$.landlordsGlobalOptions.puke54Object.LW = {
+					title: '小王(little wang)',
 					Y: 4,
 					X: 1,
 					sort: 46,
 					points: pointsString.charAt(16)
 				};
-				// console.log($.landlordsGlobalOptions.puke54Object.LJ);
+				// console.log($.landlordsGlobalOptions.puke54Object.LW);
 			} else if(x == 2) {
 				$.landlordsGlobalOptions.puke54Object.NN = {
 					title: '背面',
@@ -374,7 +374,29 @@
 			});
 
 			self.btnLeadElem.click(function() {
-				self.message('lead',0,1);
+				var cards = [];
+				var rules = {
+					straight: function() { // 顺子
+					},
+					continuityPair: function() { // 连对
+					},
+					pair: function() { // 对子
+					},
+					pair3Carrying: function() { // 3背2
+					},
+					one3Carrying: function() { // 3背1
+					},
+					friedKing: function() { // 王炸
+					},
+					single: function() {
+					}
+				};
+				self.playerElem.children('.selected').each(function() {
+					cards.push($(this).attr('k'));
+				});
+				console.log(cards);
+
+				// self.message('lead',0,1);
 			});
 
 			self.btnNotLeadElem.click(function() {
@@ -1091,40 +1113,9 @@
 				var rects = [];
 				var downElem = $([]);
 				var selectBoxElem = $([]);
-				var calcSelectedElem = function(e) {
-					var pageX = e.clientX + $(window).scrollLeft();
-					var pageY = e.clientY + $(window).scrollTop();
-
-					if(X == pageX && Y == pageY) {
-						downElem.toggleClass('selected');
-						return;
-					}
-
-					var minX = Math.min(X, pageX), maxX = Math.max(X, pageX);
-					var minY = Math.min(Y, pageY), maxY = Math.max(Y, pageY);
-
-					selectBoxElem.width(maxX-minX).height(maxY-minY).css({
-						left: minX + 'px',
-						top: minY + 'px'
-					});
-
-					$.each(rects, function() {
-						if(minX <= this.x2 && this.x <= maxX) {
-							if(this.selected) {
-								this.elem.removeClass('selected');
-							} else {
-								this.elem.addClass('selected');
-							}
-						} else if(this.selected) {
-							this.elem.addClass('selected');
-						} else {
-							this.elem.removeClass('selected');
-						}
-					});
-				};
 
 				self.playerElem.children().mousedown(function(e) {
-					if(isDowned) {
+					if(isDowned || e.button === 2) {
 						return;
 					}
 
@@ -1153,13 +1144,52 @@
 						return;
 					}
 
-					calcSelectedElem(e);
+					var pageX = e.clientX + $(window).scrollLeft();
+					var pageY = e.clientY + $(window).scrollTop();
+
+					var minX = Math.min(X, pageX), maxX = Math.max(X, pageX);
+					var minY = Math.min(Y, pageY), maxY = Math.max(Y, pageY);
+
+					selectBoxElem.width(maxX-minX).height(maxY-minY).css({
+						left: minX + 'px',
+						top: minY + 'px'
+					});
 				}).unbind('mouseup.landlords').bind('mouseup.landlords', function(e) {
 					if(!isDowned) {
 						return;
 					}
 					isDowned = false;
-					calcSelectedElem(e);
+
+					var pageX = e.clientX + $(window).scrollLeft();
+					var pageY = e.clientY + $(window).scrollTop();
+
+					if(X == pageX && Y == pageY) {
+						downElem.toggleClass('selected');
+						selectBoxElem.remove();
+						return;
+					}
+
+					var minX = Math.min(X, pageX), maxX = Math.max(X, pageX);
+					var minY = Math.min(Y, pageY), maxY = Math.max(Y, pageY);
+
+					selectBoxElem.width(maxX-minX).height(maxY-minY).css({
+						left: minX + 'px',
+						top: minY + 'px'
+					});
+
+					$.each(rects, function() {
+						if(minX <= this.x2 && this.x <= maxX) {
+							if(this.selected) {
+								this.elem.removeClass('selected');
+							} else {
+								this.elem.addClass('selected');
+							}
+						} else if(this.selected) {
+							this.elem.addClass('selected');
+						} else {
+							this.elem.removeClass('selected');
+						}
+					});
 					selectBoxElem.remove();
 				});
 				$('<div style="clear:both;"></div>').appendTo(self.playerElem);
@@ -1205,9 +1235,10 @@
 			var size = self.playerElem.children().size();
 			if(size) {
 				var width = (size - 1) * ($.landlordsGlobalOptions.puke54Options.width - parseInt($.landlordsGlobalOptions.paddingLeftOrTop)) + $.landlordsGlobalOptions.puke54Options.width;
-				self.playerElem.css('margin-left', Math.floor(-width/2) + 'px');
-			} else {
-				self.playerElem.css('margin-left', '0px');
+				self.playerElem.css({
+					width: width,
+					marginLeft: Math.floor(-width/2) + 'px'
+				});
 			}
 		},
 		getPukeElemForNormal: function(k) {

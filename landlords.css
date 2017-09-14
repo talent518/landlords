@@ -23,7 +23,7 @@
 .g-landlords-msg{position:absolute;color:#F20;font-size:30px;font-weight:bold;font-family:'微软雅黑', 'Microsoft YaHei', '黑体', 'Arial Black', 'Arial';}
 .g-landlords-msg span{margin:0 0.5em;}
 
-.g-landlords-player{position:absolute;left:512px;bottom:50px;}
+.g-landlords-player{position:absolute;left:527px;bottom:50px;}
 .g-landlords-player .selected{margin-top:-20px;}
 .g-landlords-player-avatar{left:0px;bottom:50px;}
 .g-landlords-player-name{left:0px;bottom:40px;}

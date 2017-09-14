@@ -825,13 +825,13 @@ function actionInit($uid, $username, $deskId, $deskPosition, $scores, $isWoman, 
 		// 未开局，发牌并初始化开局参数
 		if(!$isPlaying && $players == 3) {
 			$isPlaying = 1;
-			$pukes = array('LJ');
+			$pukes = array('LW');
 			foreach(array('H', 'D', 'C', 'S') as $k1) {
 				foreach(array('A', 2, 3, 4, 5, 6, 7, 8, 9, 10, 'J', 'Q', 'K') as $k2) {
 					$pukes[] = $k1 . $k2;
 				}
 			}
-			$pukes[] = 'BJ';
+			$pukes[] = 'BW';
 			shuffle($pukes);
 
 			$aCards = $bCards = $cCards = array();
