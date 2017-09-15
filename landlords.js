@@ -218,6 +218,22 @@
 		loadingElem: $([]), // Ajax加载图标
 
 		isStarted: false, // 是否已开始游戏
+		
+		playerDownTimer: {
+			timer: 0,
+			itimer: 0,
+			clean: function(){}
+		},
+		rightDownTimer: {
+			timer: 0,
+			itimer: 0,
+			clean: function(){}
+		},
+		leftDownTimer: {
+			timer: 0,
+			itimer: 0,
+			clean: function(){}
+		},
 
 		init: function() {
 			var self = this;
@@ -247,6 +263,7 @@
 			self.playerNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-player-number">0</div>').appendTo(self.wrapperElem);
 			self.playerTimerElem = $('<div class="g-landlords-icons g-landlords-timer g-landlords-player-timer">30</div>').appendTo(self.wrapperElem);
 			self.playerMsgElem = $('<div class="g-landlords-msg g-landlords-player-msg"></div>').appendTo(self.wrapperElem);
+			self.playerLeadElem = $('<div class="g-landlords-player-lead" style="padding-left:' + $.landlordsGlobalOptions.paddingLeftOrTop + ';"></div>').appendTo(self.wrapperElem);
 
 			self.leftElem = $('<div class="g-landlords-left" style="padding-top:' + $.landlordsGlobalOptions.paddingLeftOrTopPercent + ';"></div>').appendTo(self.wrapperElem);
 			self.leftAvatarElem = $('<div class="g-landlords-icons g-landlords-avatar g-landlords-left-avatar"></div>').appendTo(self.wrapperElem);
@@ -256,6 +273,7 @@
 			self.leftNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-left-number">0</div>').appendTo(self.wrapperElem);
 			self.leftTimerElem = $('<div class="g-landlords-icons g-landlords-timer g-landlords-left-timer">30</div>').appendTo(self.wrapperElem);
 			self.leftMsgElem = $('<div class="g-landlords-msg g-landlords-left-msg"></div>').appendTo(self.wrapperElem);
+			self.leftLeadElem = $('<div class="g-landlords-left-lead" style="padding-top:' + $.landlordsGlobalOptions.paddingLeftOrTopPercent + ';"></div>').appendTo(self.wrapperElem);
 
 			self.rightElem = $('<div class="g-landlords-right" style="padding-top:' + $.landlordsGlobalOptions.paddingLeftOrTopPercent + ';"></div>').appendTo(self.wrapperElem);
 			self.rightAvatarElem = $('<div class="g-landlords-icons g-landlords-avatar g-landlords-right-avatar"></div>').appendTo(self.wrapperElem);
@@ -265,6 +283,7 @@
 			self.rightNumberElem = $('<div class="g-landlords-icons g-landlords-number g-landlords-right-number">0</div>').appendTo(self.wrapperElem);
 			self.rightTimerElem = $('<div class="g-landlords-icons g-landlords-timer g-landlords-right-timer">30</div>').appendTo(self.wrapperElem);
 			self.rightMsgElem = $('<div class="g-landlords-msg g-landlords-right-msg"></div>').appendTo(self.wrapperElem);
+			self.rightLeadElem = $('<div class="g-landlords-right-lead" style="padding-top:' + $.landlordsGlobalOptions.paddingLeftOrTopPercent + ';"></div>').appendTo(self.wrapperElem);
 
 			self.btnStartElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-start">开始</button>').appendTo(self.wrapperElem);
 			self.btnCallElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-call">叫地主</button>').appendTo(self.wrapperElem);
@@ -438,7 +457,11 @@
 
 				self.post(action, data, function(json) {
 					if(json.status) {
-						self.post('init');
+						if(action === 'register') {
+							formElem.removeClass('register');
+						} else {
+							self.post('init');
+						}
 					} else {
 						self.message($('button:visible', formElem).text() + '失败！', 0, 1);
 					}
@@ -525,19 +548,17 @@
 				url: self.options.ajaxUrl.replace('{action}', action),
 				data: data,
 				type: 'POST',
-				success: function(response) {
-					try {
-						var json = ($.inArray('json', this.dataTypes) > -1 ? response : $.parseJSON(response));
+				success: function(json) {
+					if($.inArray('json', this.dataTypes) > -1) {
 						if(typeof(json.eval) === 'string') {
 							callback = new Function('json', json.eval);
 						}
 						callback.call(self, json);
-					} catch (e) {
+					} else {
 						if(window.console && window.console.log) {
-							window.console.log(e);
-							window.console.log('response = ', response);
+							window.console.log('response = ', json);
 						}
-						self.message(e.message);
+						self.message(json);
 					}
 				},
 				error: function(xhr) {
@@ -721,6 +742,8 @@
 				self.maxLogId = json.maxLogId;
 				self.lastLeadPosition = json.lastLeadPosition;
 				self.lastLeads = json.lastLeads;
+				self.lastLeadName = json.lastLeadName;
+				self.lastLeadLabel = json.lastLeadLabel;
 
 				if(json.isPlaying) {
 					clearTimeout(self.initTimer);
@@ -841,6 +864,8 @@
 
 						self.lastLeadPosition = v.weightPosition;
 						self.lastLeads = v.leads;
+						self.lastLeadName = v.leadName;
+						self.lastLeadLabel = v.leadLabel;
 
 						if(self.playerPosition === v.weightPosition) {
 						}
@@ -980,6 +1005,8 @@
 			self.resizePlayer();
 
 			self.renderProcess({actions:[]});
+			
+			self.renderLeads();
 
 			if(self.playerPosition === self.weightPosition) {
 				self.renderBtn(self.isPlaying);
@@ -988,6 +1015,67 @@
 				self.rightDownTimer = self.downTimer(self.rightTimerElem.show());
 			} else if(self.leftPosition === self.weightPosition) {
 				self.leftDownTimer = self.downTimer(self.leftTimerElem.show());
+			}
+		},
+		renderLeads: function() {
+			var self = this;
+
+			self.lastLeadPosition;
+			self.lastLeads;
+			self.lastLeadName;
+			self.lastLeadLabel;
+			
+			if(typeof(self.lastLeads) !== 'string' || self.lastLeads.length === 0) {
+				self.lastLeadRule = false;
+				return;
+			}
+			
+			self.lastLeadRule = self.initLeadCardRules(self.lastLeads.split(','));
+			
+			if(self.playerPosition === self.lastLeadPosition) {
+				self.playerMsgElem.text(self.lastLeadLabel);
+
+				var i;
+
+				self.playerLeadElem.empty();
+				for(i=0; i<self.lastLeadRule.cards.length; i++) {
+					self.getPukeElemForNormal(self.lastLeadRule.cards[i]).appendTo(self.playerLeadElem)
+				}
+
+				$('<div style="clear:both;"></div>').appendTo(self.playerLeadElem);
+				
+				var size = self.playerLeadElem.children('.puke').size();
+				if(size) {
+					var paddingLeft = parseInt($.landlordsGlobalOptions.paddingLeftOrTop);
+					var width = (size - 1) * ($.landlordsGlobalOptions.puke54Options.width - paddingLeft) + $.landlordsGlobalOptions.puke54Options.width;
+					self.playerLeadElem.css({
+						width: width,
+						left: Math.floor((self.wrapperElem.width() - width)/2) + 'px'
+					});
+				}
+			} else if(self.rightPosition === self.lastLeadPosition) {
+				self.rightMsgElem.text(self.lastLeadLabel);
+					
+				var i;
+			
+				var zIndex = 1;
+
+				self.rightLeadElem.empty();
+				for(i=0; i<self.lastLeadRule.cards.length; i++) {
+					self.getPukeElemForR90Percent(self.lastLeadRule.cards[i]).css({
+						position: 'relative',
+						zIndex: zIndex++
+					}).prependTo(self.rightLeadElem);
+				}
+			} else if(self.leftPosition === self.lastLeadPosition) {
+				self.leftMsgElem.text(self.lastLeadLabel);
+
+				var i;
+
+				self.leftLeadElem.empty();
+				for(i=0; i<self.lastLeadRule.cards.length; i++) {
+					self.getPukeElemForR90Percent(self.lastLeadRule.cards[i]).appendTo(self.leftLeadElem);
+				}
 			}
 		},
 		renderBtn: function(isPlaying) {
@@ -1152,7 +1240,7 @@
 				return o.cards.length === 1;
 			},
 			straight: function(o) { // 顺子
-				return !o.m4 && !o.m3 && !o.m2 && o.s0.length>=5 && 'AKQJ109876543'.indexOf(o.s0) >= 0;
+				return !o.m4 && !o.m3 && !o.m2 && o.s0.length>=5 && 'AKQJ19876543'.indexOf(o.s0) >= 0;
 			},
 			pair: function(o) { // 对子
 				return !o.m4 && !o.m3 && o.s0.length === 0 && o.m2 && o.m2.length === 1 && o.m2[0] !== 'WW';
@@ -1201,12 +1289,14 @@
 				return 'AAAKKKQQQJJJ111999888777666555444333'.indexOf(o.m3.join('')) >= 0;
 			}
 		},
-		initLeadCardRules: function() {
+		getSelectCards: function() {
 			var cards = [];
 			this.selectElems = this.playerElem.children('.selected').each(function() {
 				cards.push($(this).attr('k'));
 			});
-
+			return cards;
+		},
+		initLeadCardRules: function(cards) {
 			if(cards.length === 0) {
 				return false;
 			} else {
@@ -1232,7 +1322,7 @@
 		},
 		validLeadCard: function() {
 			var self = this;
-			var o = this.initLeadCardRules();
+			var o = this.initLeadCardRules(self.getSelectCards());
 
 			if(!o) {
 				return false;
@@ -1289,10 +1379,11 @@
 			var self = this;
 			var size = self.playerElem.children('.puke').size();
 			if(size) {
-				var width = size * ($.landlordsGlobalOptions.puke54Options.width - parseInt($.landlordsGlobalOptions.paddingLeftOrTop)) + $.landlordsGlobalOptions.puke54Options.width;
+				var paddingLeft = parseInt($.landlordsGlobalOptions.paddingLeftOrTop);
+				var width = (size - 1) * ($.landlordsGlobalOptions.puke54Options.width - paddingLeft) + $.landlordsGlobalOptions.puke54Options.width;
 				self.playerElem.css({
 					width: width,
-					marginLeft: Math.floor(-width/2) + 'px'
+					left: Math.floor((self.wrapperElem.width() - width)/2) + 'px'
 				});
 			}
 		},

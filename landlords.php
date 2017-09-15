@@ -13,8 +13,14 @@ define('ACTION_TYPE_NO_DOUBLE', 6); // 不加倍
 define('ACTION_TYPE_LEAD', 7); // 出牌，字段：deskPosition(桌位)，beforeCards(出牌前手中的牌)，leads(出的牌)，isRobot(是否机器人处理)
 define('ACTION_TYPE_NO_LEAD', 8); // 不出
 
+if(!file_exists('./config.php')) {
+	@copy('./config.sample', './config.php') or die('文件config.php没有写权限，请手动复制文件config.sample到config.php！');
+}
+
+include './config.php';
+
 try {
-	$pdo=new PDO('mysql:host=localhost;dbname=landlords', 'root', '123456');
+	$pdo=new PDO(DB_DSN, DB_USR, DB_PWD);
 }catch(PDOException $e) {
     echo 'PDO-MySQL连接错误 : ', $e->getMessage();
     exit;
@@ -1058,7 +1064,7 @@ function callLandlords($uid, $deskId, $openGames, $deskPosition, $cards, $isRob=
 }
 
 function actionCall($uid, $deskId, $deskPosition, $isRob) {
-	list($isPlaying, $openGames, $weightPosition, $pUid, $cards) = getDeskById($deskId, false, 'isPlaying, openGames, weightPosition, ' . $deskPosition . 'Uid, cards');
+	list($isPlaying, $openGames, $weightPosition, $pUid, $cards) = getDeskById($deskId, 'n', 'isPlaying, openGames, weightPosition, ' . $deskPosition . 'Uid, cards');
 	if($isPlaying != 1 || $deskPosition !== $weightPosition || $pUid != $uid) {
 		return array(
 			'eval' => 'this.message("还没轮到你操作呢！")',
@@ -1135,8 +1141,8 @@ function actionLead($uid, $deskId, $deskPosition, $cards) {
 		$afterCards = implode(',', array_diff(explode(',', $beforeCards), $rule->cards));
 		$afterLeads = $beforeLeads . ($beforeLeads ? ',' : null) . $cards;
 
-		$sql = 'INSERT INTO desk_action_logs (uid, deskId, openGames, actionType, weightPosition, beforeCards, leads, dateline, createTime)VALUES(?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), NOW())';
-		$params = array($uid, $deskId, $desk->openGames, ACTION_TYPE_NO_LEAD, $deskPosition, $beforeCards, $cards);
+		$sql = 'INSERT INTO desk_action_logs (uid, deskId, openGames, actionType, weightPosition, beforeCards, leads, leadName, leadLabel, dateline, createTime)VALUES(?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), NOW())';
+		$params = array($uid, $deskId, $desk->openGames, ACTION_TYPE_LEAD, $deskPosition, $beforeCards, $cards, $rule->name, $rule->label);
 		prepare($sql, $params);
 
 		$sql = 'UPDATE desks SET ' . $deskPosition . 'Cards=?, ' . $deskPosition . 'Leads=? WHERE deskId=?';
@@ -1311,7 +1317,7 @@ class LeadCardRule {
 	}
 
 	public function straight() { // 顺子
-		return !$this->m4 && !$this->m3 && !$this->m2 && strlen($this->s0) >= 5 && strpos('AKQJ109876543', $this->s0) !== false;
+		return !$this->m4 && !$this->m3 && !$this->m2 && strlen($this->s0) >= 5 && strpos('AKQJ19876543', $this->s0) !== false;
 	}
 	public function pair() { // 对子
 		return !$this->m4 && !$this->m3 && strlen($this->s0) === 0 && $this->m2 && count($this->m2) === 1 && $this->m2[0] !== 'WW';

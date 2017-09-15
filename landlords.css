@@ -20,7 +20,7 @@
 .g-landlords-timer2{background-position:-200px -400px;}
 .g-landlords-timer3{background-position:-300px -400px;}
 
-.g-landlords-msg{position:absolute;color:#F20;font-size:30px;font-weight:bold;font-family:'微软雅黑', 'Microsoft YaHei', '黑体', 'Arial Black', 'Arial';}
+.g-landlords-msg{position:absolute;z-index:1;color:#F60;font-size:30px;font-weight:bold;font-family:'微软雅黑', 'Microsoft YaHei', '黑体', 'Arial Black', 'Arial';}
 .g-landlords-msg span{margin:0 0.5em;}
 
 .g-landlords-player{position:absolute;left:527px;bottom:50px;}
@@ -29,7 +29,8 @@
 .g-landlords-player-name{left:0px;bottom:40px;}
 .g-landlords-player-number{right:70px;bottom:62px;}
 .g-landlords-player-timer{left:50%;bottom:250px;margin-left:-45px;}
-.g-landlords-player-msg{left:0px;bottom:250px;width:100%;text-align:center;}
+.g-landlords-player-msg{left:0px;bottom:207px;width:100%;line-height:50px;text-align:center;}
+.g-landlords-player-lead{position:absolute;left:527px;bottom:205px;}
 
 .g-landlords-left{position:absolute;left:200px;top:50px;}
 .g-landlords-left-avatar{left:0px;top:50px;}
@@ -37,6 +38,7 @@
 .g-landlords-left-number{left:70px;top:270px;}
 .g-landlords-left-timer{left:280px;top:180px;}
 .g-landlords-left-msg{left:280px;top:180px;}
+.g-landlords-left-lead{position:absolute;left:280px;top:50px;}
 
 .g-landlords-right{position:absolute;right:200px;top:50px;}
 .g-landlords-right-avatar{right:0px;top:50px;background-position:-200px 0px;}
@@ -46,6 +48,7 @@
 .g-landlords-right-number{right:70px;top:270px;z-index:50;}
 .g-landlords-right-timer{right:280px;top:180px;z-index:50;}
 .g-landlords-right-msg{right:280px;top:180px;z-index:50;}
+.g-landlords-right-lead{position:absolute;right:280px;top:50px;}
 
 .g-landlords-button{display:none;position:absolute;margin:0px;padding:0px;height:44px;overflow:hidden;border:none;outline:none;text-indent:-1000px;cursor:pointer;}
 .g-landlords-btn-start{left:50%;top:50%;width:85px;margin-left:-137px;margin-top:-22px;background-position:0px -500px;}
