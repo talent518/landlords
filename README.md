@@ -3,7 +3,7 @@ HTML4+CSS2+JavaScript实现的斗地主
 
 # 重置桌子记录SQL
 ```
-TRUNCATE TABLE desk_lead_logs;
+TRUNCATE TABLE desk_action_logs;
 TRUNCATE TABLE desks;
 INSERT INTO desks (isPlaying)VALUES(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0),(0);
 TRUNCATE TABLE user_score_logs;

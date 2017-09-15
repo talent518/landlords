@@ -32,7 +32,7 @@ CREATE TABLE `desk_action_logs` (
   `createTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '出牌时间',
   PRIMARY KEY (`logId`),
   KEY `deskId` (`deskId`,`openGames`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8 COMMENT='桌位玩家出牌日志表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='桌位玩家出牌日志表';
 
 /*Table structure for table `desks` */
 
