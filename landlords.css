@@ -69,6 +69,7 @@
 .g-landlords-btn-lead{left:512px;bottom:185px;width:85px;margin-left:-142px;background-position:0px -750px;}
 .g-landlords-btn-lead.hover{background-position:-150px -750px;}
 .g-landlords-btn-lead.disabled{background-position:-300px -750px !important;cursor:default;}
+.g-landlords-btn-lead.center{margin-left:-42px;}
 .g-landlords-btn-change{left:50%;top:50%;width:85px;margin-left:-42px;margin-top:-22px;background-position:0px -800px;}
 .g-landlords-btn-change.hover{background-position:-150px -800px;}
 .g-landlords-btn-change.disabled{background-position:-300px -800px !important;cursor:default;}
@@ -126,3 +127,8 @@
 .g-landlords-message .g-body{position:relative;overflow:hidden;}
 
 .g-landlords-shadow{-webkit-box-shadow:3px 3px 10px rgba(0, 0, 0, .5);-moz-box-shadow:3px 3px 10px rgba(0, 0, 0, .5);box-shadow:3px 3px 10px rgba(0, 0, 0, .5);}
+
+.ref-line{display:none;}
+.ref-line .x{position:absolute;left:50%;top:0px;width:1px;height:100%;background:red;}
+.ref-line .y{position:absolute;left:0px;top:50%;width:100%;height:1px;background:red;}
+

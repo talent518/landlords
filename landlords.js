@@ -297,6 +297,8 @@
 			self.btnDoubleElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-double">加倍</button>').appendTo(self.wrapperElem);
 			self.btnNoDoubleElem = $('<button class="g-landlords-icons g-landlords-button g-landlords-btn-no-double">不加倍</button>').appendTo(self.wrapperElem);
 			self.btnElems = $('.g-landlords-button', self.wrapperElem);
+			
+			$('<div class="ref-line"><span class="y"></span><span class="x"></span></div>').appendTo(self.wrapperElem);
 
 			$('.g-landlords-name,.g-landlords-button,.g-close', self.wrapperElem).hover(function(){
 				$(this).addClass('hover');
@@ -867,14 +869,7 @@
 						self.lastLeadName = v.leadName;
 						self.lastLeadLabel = v.leadLabel;
 
-						if(self.playerPosition === v.weightPosition) {
-						}
-
-						if(self.rightPosition === v.weightPosition) {
-						}
-
-						if(self.leftPosition === v.weightPosition) {
-						}
+						self.renderLeads();
 						break;
 					case ACTION_TYPE_NO_LEAD:
 						msg = '不出';
@@ -893,10 +888,12 @@
 							self.rightDownTimer.clean();
 							self.leftDownTimer.clean();
 
+							self.playerLeadElem.empty();
 							self.playerDownTimer = self.downTimer(self.playerTimerElem.show(), function(){self.post('timeout');});
 							self.renderBtn(json.isPlaying);
 						} else {
 							self.rightMsgElem.text('');
+							self.rightLeadElem.empty();
 							self.rightDownTimer = self.downTimer(self.rightTimerElem.show());
 						}
 						break;
@@ -908,9 +905,11 @@
 							self.playerDownTimer.clean();
 							self.leftDownTimer.clean();
 
+							self.rightLeadElem.empty();
 							self.rightDownTimer = self.downTimer(self.rightTimerElem.show());
 						} else {
 							self.leftMsgElem.text('');
+							self.leftLeadElem.empty();
 							self.leftDownTimer = self.downTimer(self.leftTimerElem.show());
 						}
 						break;
@@ -921,10 +920,12 @@
 						if(isKeep) {
 							self.playerDownTimer.clean();
 							self.rightDownTimer.clean();
-
+							
+							self.leftLeadElem.empty();
 							self.leftDownTimer = self.downTimer(self.leftTimerElem.show());
 						} else {
 							self.playerMsgElem.text('');
+							self.playerLeadElem.empty();
 							self.playerDownTimer = self.downTimer(self.playerTimerElem.show(), function(){self.post('timeout');});
 
 							self.renderBtn(json.isPlaying);
@@ -1005,16 +1006,17 @@
 			self.resizePlayer();
 
 			self.renderProcess({actions:[]});
-			
-			self.renderLeads();
 
 			if(self.playerPosition === self.weightPosition) {
 				self.renderBtn(self.isPlaying);
 				self.playerDownTimer = self.downTimer(self.playerTimerElem.show(), function(){self.post('timeout');});
-			} else if(self.rightPosition === self.weightPosition) {
-				self.rightDownTimer = self.downTimer(self.rightTimerElem.show());
-			} else if(self.leftPosition === self.weightPosition) {
-				self.leftDownTimer = self.downTimer(self.leftTimerElem.show());
+			} else {
+				self.renderLeads();
+				if(self.rightPosition === self.weightPosition) {
+					self.rightDownTimer = self.downTimer(self.rightTimerElem.show());
+				} else if(self.leftPosition === self.weightPosition) {
+					self.leftDownTimer = self.downTimer(self.leftTimerElem.show());
+				}
 			}
 		},
 		renderLeads: function() {
@@ -1096,9 +1098,13 @@
 					break;
 				}
 				case 3: {
-					self.btnLeadElem.show().disabled(true);
-					self.btnNotLeadElem.show();
-					self.btnPromptElem.show();
+					self.btnLeadElem.removeClass('center').show().disabled(true);
+					if(self.playerPosition === self.lastLeadPosition) {
+						self.btnLeadElem.addClass('center');
+					} else {
+						self.btnNotLeadElem.show();
+						self.btnPromptElem.show();
+					}
 					break;
 				}
 			}
@@ -1281,12 +1287,49 @@
 
 				return o.s.length >= 6 && o.s.length % 2 === 0 && 'AAKKQQJJ1199887766554433'.indexOf(o.s) >= 0 && o.s[0] === o.s[1];
 			},
-			airplane: function(o) { // 连对: 最少3连对
+			airplane: function(o) { // 飞机
 				if(o.m4 || !o.m3 || o.m3.length<2 || (o.m2 && o.s0.length && o.m3.length !== o.m2.length*2 + o.s0.length) || (o.m2 && !o.s0.length && (o.m2[0] === 'WW' || (o.m3.length !== o.m2.length && o.m3.length !== o.m2.length*2))) ||  (!o.m2 && o.s0.length && o.m3.length !== o.s0.length)) {
 					return false;
 				}
 
 				return 'AAAKKKQQQJJJ111999888777666555444333'.indexOf(o.m3.join('')) >= 0;
+			}
+		},
+		charSortRule: '34567891JQKA2W',
+		greaterRules: {
+			single: function(o, o2, f) { // 单
+				return f.call(this, o2) && this.charSortRule.indexOf(o.s) > this.charSortRule.indexOf(o2.s);
+			},
+			straight: function(o, o2, f) { // 顺子
+				return o.s.length === o2.s.length && f.call(this, o2) && this.charSortRule.indexOf(o.s[0]) > this.charSortRule.indexOf(o2.s[0]);
+			},
+			pair: function(o, o2, f) { // 对子
+				return f.call(this, o2) && this.charSortRule.indexOf(o.s[0]) > this.charSortRule.indexOf(o2.s[0]);
+			},
+			wangBomb: function(o, o2, f) { // 王炸
+				return true;
+			},
+			three: function(o, o2, f) { // 3个n：
+				return f.call(this, o2) && this.charSortRule.indexOf(o.s[0]) > this.charSortRule.indexOf(o2.s[0]);
+			},
+			threeWithOne: function(o, o2, f) { // 3背1
+				return f.call(this, o2) && this.charSortRule.indexOf(o.m3[0][0]) > this.charSortRule.indexOf(o2.m3[0][0]);
+			},
+			bomb: function(o, o2, f) { // 炸弹
+				var t = f.call(this, o2);
+				return (!t && !this.validRules.wangBomb(this,o2)) || (t && this.charSortRule.indexOf(o.m4[0][0]) > this.charSortRule.indexOf(o2.m4[0][0]));
+			},
+			threeWithTwo: function(o, o2, f) { // 3背2
+				return f.call(this, o2) && this.charSortRule.indexOf(o.m3[0][0]) > this.charSortRule.indexOf(o2.m3[0][0]);
+			},
+			fourWithTwo: function(o, o2, f) { // 四带二, 四带两对
+				return o.s.length === o2.s.length && f.call(this, o2) && this.charSortRule.indexOf(o.m4[0][0]) > this.charSortRule.indexOf(o2.m4[0][0]);
+			},
+			continuityPair: function(o, o2, f) { // 连对: 最少3连对
+				return o.s.length === o2.s.length && f.call(this, o2) && this.charSortRule.indexOf(o.s[0]) > this.charSortRule.indexOf(o2.s[0]);
+			},
+			airplane: function(o, o2, f) { // 飞机
+				return o.s.length === o2.s.length && f.call(this, o2) && this.charSortRule.indexOf(o.m3[0][0]) > this.charSortRule.indexOf(o2.m3[0][0]);
 			}
 		},
 		getSelectCards: function() {
@@ -1302,7 +1345,7 @@
 			} else {
 				var o = {cards: cards};
 				
-				o.s = cards.join('').replace(/(H|D|C|S|0)/g, '');
+				o.s = cards.join('').replace(/(H|D|C|S|B|L|0)/g, '');
 
 				o.re4 = /(2222|AAAA|KKKK|QQQQ|JJJJ|1111|9999|8888|7777|6666|5555|4444|3333)/g;
 				o.re3 = /(222|AAA|KKK|QQQ|JJJ|111|999|888|777|666|555|444|333)/g;
@@ -1333,7 +1376,7 @@
 			// console.log(o);
 
 			for(k in self.validRules) {
-				if(self.validRules[k].call(self, o)) {
+				if(self.validRules[k].call(self, o) && (self.playerPosition === self.lastLeadPosition || self.greaterRules[k].call(self, o, self.lastLeadRule, self.validRules[k]))) {
 					self.cardLabel = self.labels[k];
 					self.cardName = k;
 					// console.log(self.cardLabel);

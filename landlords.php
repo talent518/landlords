@@ -1141,7 +1141,7 @@ function actionLead($uid, $deskId, $deskPosition, $cards) {
 		$afterCards = implode(',', array_diff(explode(',', $beforeCards), $rule->cards));
 		$afterLeads = $beforeLeads . ($beforeLeads ? ',' : null) . $cards;
 
-		$sql = 'INSERT INTO desk_action_logs (uid, deskId, openGames, actionType, weightPosition, beforeCards, leads, leadName, leadLabel, dateline, createTime)VALUES(?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), NOW())';
+		$sql = 'INSERT INTO desk_action_logs (uid, deskId, openGames, actionType, weightPosition, beforeCards, leads, leadName, leadLabel, dateline, createTime)VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), NOW())';
 		$params = array($uid, $deskId, $desk->openGames, ACTION_TYPE_LEAD, $deskPosition, $beforeCards, $cards, $rule->name, $rule->label);
 		prepare($sql, $params);
 
@@ -1219,6 +1219,8 @@ function confirmDouble($deskId, $openGames) {
 }
 
 function actionTimeout($uid, $deskId, $deskPosition) {
+	return array('eval'=>'location.reload();');
+	
 	$desk = getDeskById($deskId);
 	if($deskPosition !== $desk->weightPosition || $desk->{$deskPosition . 'Uid'} != $uid) {
 		return array(
@@ -1255,6 +1257,8 @@ class LeadCardRule {
 	const RE4 = '/(2222|AAAA|KKKK|QQQQ|JJJJ|1111|9999|8888|7777|6666|5555|4444|3333)/';
 	const RE3 = '/(222|AAA|KKK|QQQ|JJJ|111|999|888|777|666|555|444|333)/';
 	const RE2 = '/(WW|22|AA|KK|QQ|JJ|11|99|88|77|66|55|44|33)/';
+	
+	const charSortRule = '34567891JQKA2W';
 
 	private $labels = array(
 		'single' => '单', // 1张
@@ -1275,7 +1279,7 @@ class LeadCardRule {
 
 		self::sortCards($this->cards);
 
-		$this->s = preg_replace('/(H|D|C|S|0)/', '', implode('', $this->cards));
+		$this->s = preg_replace('/(H|D|C|S|B|L|0)/', '', implode('', $this->cards));
 
 		$matches = null;
 		preg_match_all(self::RE4, $this->s, $matches);
@@ -1308,23 +1312,43 @@ class LeadCardRule {
 	}
 
 	public function greater($cards) {
-		// TODO
-		return true;
+		if(!isset($this->labels[$this->name])) {
+			return false;
+		}
+		
+		$sortMethod = $this->name . 'Sort';
+		
+		return $this->$sortMethod(new static($cards));
 	}
 
 	public function single() { // 单
 		return count($this->cards) === 1;
 	}
+	public function singleSort($o) {
+		return $o->single() && strpos(self::charSortRule, $this->s) > strpos(self::charSortRule, $o->s);
+	}
 
 	public function straight() { // 顺子
 		return !$this->m4 && !$this->m3 && !$this->m2 && strlen($this->s0) >= 5 && strpos('AKQJ19876543', $this->s0) !== false;
 	}
+	public function straightSort($o) {
+		return strlen($this->s) === strlen($o->s) && $o->straight() && strpos(self::charSortRule, $this->s[0]) > strpos(self::charSortRule, $o->s[0]);
+	}
+	
 	public function pair() { // 对子
 		return !$this->m4 && !$this->m3 && strlen($this->s0) === 0 && $this->m2 && count($this->m2) === 1 && $this->m2[0] !== 'WW';
 	}
+	public function pairSort($o) {
+		return $o->pair() && strpos(self::charSortRule, $this->s[0]) > strpos(self::charSortRule, $o->s[0]);
+	}
+	
 	public function wangBomb() { // 王炸
 		return !$this->m4 && !$this->m3 && strlen($this->s0) === 0 && $this->m2 && count($this->m2) === 1 && $this->m2[0] === 'WW';
 	}
+	public function wangBombSort($o) {
+		return true;
+	}
+	
 	public function three() { // 3个n：
 		if(!$this->m4 && !$this->m2 && strlen($this->s0) === 0 && $this->m3 && count($this->m3) === 1) {
 			$this->labels['three'] = '三个' + substr($this->cards[0], 1);
@@ -1334,15 +1358,32 @@ class LeadCardRule {
 
 		return false;
 	}
+	public function threeSort($o) {
+		return $o->three() && strpos(self::charSortRule, $this->s[0]) > strpos(self::charSortRule, $o->s[0]);
+	}
+	
 	public function threeWithOne() { // 3背1
 		return !$this->m4 && !$this->m2 && strlen($this->s0) === 1 && $this->m3 && count($this->m3) === 1;
 	}
+	public function threeWithOneSort($o) {
+		return $o->threeWithOne() && strpos(self::charSortRule, $this->m3[0][0]) > strpos(self::charSortRule, $o->m3[0][0]);
+	}
+	
 	public function bomb() { // 炸弹
 		return !$this->m3 && !$this->m2 && strlen($this->s0) === 0 && $this->m4 && count($this->m4) === 1;
 	}
+	public function bombSort($o) {
+		$t = $o->bomb();
+		return (!$t && !$o->wangBomb()) || ($t && strpos(self::charSortRule, $this->m4[0][0]) > strpos(self::charSortRule, $o->m4[0][0]));
+	}
+	
 	public function threeWithTwo() { // 3背2
 		return !$this->m4 && strlen($this->s0) === 0 && $this->m3 && count($this->m3) === 1 && $this->m2 && count($this->m2) === 1 && $this->m2[0] !== 'WW';
 	}
+	public function threeWithTwoSort($o) {
+		return $o->threeWithTwo() && strpos(self::charSortRule, $this->m3[0][0]) > strpos(self::charSortRule, $o->m3[0][0]);
+	}
+	
 	public function fourWithTwo() { // 四带二, 四带两对
 		if($this->m2 && count($this->m2) === 2) {
 			$this->labels['fourWithTwo'] = '四带两对';
@@ -1351,6 +1392,10 @@ class LeadCardRule {
 		}
 		return !$this->m3 && $this->m4 && count($this->m4) === 1 && ((!$this->m2 && strlen($this->s0) === 2) || (strlen($this->s0) === 0 && $this->m2 && count($this->m2) <= 2 && $this->m2[0] !== 'WW'));
 	}
+	public function fourWithTwoSort($o) {
+		return strlen($this->s) === strlen($o->s) && $o->fourWithTwo() && strpos(self::charSortRule, $this->m4[0][0]) > strpos(self::charSortRule, $o->m4[0][0]);
+	}
+	
 	public function continuityPair() { // 连对: 最少3连对
 		if(strlen($this->s) < 6 || strlen($this->s) % 2) {
 			return false;
@@ -1358,12 +1403,19 @@ class LeadCardRule {
 
 		return strlen($this->s) >= 6 && strlen($this->s) % 2 === 0 && strpos('AAKKQQJJ1199887766554433', $this->s) !== false && $this->s[0] === $this->s[1];
 	}
+	public function continuityPairSort($o) {
+		return strlen($this->s) === strlen($o->s) && $o->continuityPair() && strpos(self::charSortRule, $this->s[0]) > strpos(self::charSortRule, $o->s[0]);
+	}
+	
 	public function airplane() { // 连对: 最少3连对
 		if($this->m4 || !$this->m3 || count($this->m3)<2 || ($this->m2 && strlen($this->s0) && count($this->m3) !== count($this->m2)*2 + strlen($this->s0)) || ($this->m2 && !strlen($this->s0) && ($this->m2[0] === 'WW' || (count($this->m3) !== count($this->m2) && count($this->m3) !== count($this->m2)*2))) ||  (!$this->m2 && strlen($this->s0) && count($this->m3) !== strlen($this->s0))) {
 			return false;
 		}
 
 		return strpos('AAAKKKQQQJJJ111999888777666555444333', implode('', $this->m3)) !== false;
+	}
+	public function airplaneSort($o) {
+		return strlen($this->s) === strlen($o->s) && $o->airplane() && strpos(self::charSortRule, $this->m3[0][0]) > strpos(self::charSortRule, $o->m3[0][0]);
 	}
 
 	public static function sortCards(&$cards) {
