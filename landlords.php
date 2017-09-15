@@ -801,19 +801,19 @@ function getDeskById($deskId, $type = true, $fields = '*') {
 	$sql = 'SELECT ' . $fields . ' FROM desks WHERE deskId=?';
 	$params = array($deskId);
 	
-	if($isObject === 'raw') {
+	if($type === 'raw') {
 		return prepare($sql, $params);
 	}
 
-	if($isObject === 'n') {
+	if($type === 'n') {
 		return prepare($sql, $params)->fetch(PDO::FETCH_NUM);
 	}
 
-	if(is_numeric($isObject)) {
-		return prepare($sql, $params)->fetchColumn($isObject);
+	if(is_numeric($type)) {
+		return prepare($sql, $params)->fetchColumn($type);
 	}
 
-	return prepare($sql, $params)->fetch($isObject ? PDO::FETCH_OBJ : PDO::FETCH_ASSOC);
+	return prepare($sql, $params)->fetch($type ? PDO::FETCH_OBJ : PDO::FETCH_ASSOC);
 }
 
 function lastLeads($deskId, $openGames, & $weightPosition = '', & $leads = '', $leadName = '', & $leadLabel = '') {
@@ -1126,13 +1126,29 @@ function actionLead($uid, $deskId, $deskPosition, $cards) {
 	lastLeads($deskId, $desk->openGames, $lastLeadPosition, $lastLeads, $lastLeadName, $lastLeadLabel);
 
 	$rule = LeadCardRule::get($cards);
+	$status = $rule->valid() && ($lastLeadPosition === $deskPosition || $rule->greater($lastLeads));
+
+	if($status) {
+		$beforeCards = $desk->{$deskPosition . 'Cards'};
+		$beforeLeads = $desk->{$deskPosition . 'Leads'};
+
+		$afterCards = implode(',', array_diff(explode(',', $beforeCards), $rule->cards));
+		$afterLeads = $beforeLeads . ($beforeLeads ? ',' : null) . $cards;
+
+		$sql = 'INSERT INTO desk_action_logs (uid, deskId, openGames, actionType, weightPosition, beforeCards, leads, dateline, createTime)VALUES(?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), NOW())';
+		$params = array($uid, $deskId, $desk->openGames, ACTION_TYPE_NO_LEAD, $deskPosition, $beforeCards, $cards);
+		prepare($sql, $params);
+
+		$sql = 'UPDATE desks SET ' . $deskPosition . 'Cards=?, ' . $deskPosition . 'Leads=? WHERE deskId=?';
+		$params = array($afterCards, $afterLeads, $deskId);
+		prepare($sql, $params);
+
+		updateNextWeightPosition($deskId, $deskPosition);
+	}
 
 	return array(
-		'status' => $rule->valid(),
-		'name' => $rule->name,
-		'label' => $rule->label,
-		'eval' => 'console.log(json);this.selectElems.remove();this.playerElem.disabled(false);',
-	);
+		'eval' => 'console.log(json);this.selectElems.remove();this.resizePlayer();this.playerElem.disabled(false);',
+	) + get_defined_vars();
 }
 
 function notLead($uid, $deskId, $openGames, $deskPosition) {
@@ -1283,6 +1299,11 @@ class LeadCardRule {
 		}
 
 		return false;
+	}
+
+	public function greater($cards) {
+		// TODO
+		return true;
 	}
 
 	public function single() { // 单
