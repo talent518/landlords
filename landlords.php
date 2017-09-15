@@ -103,8 +103,12 @@ class SQLException extends Exception {
 	}
 }
 
-function prepare($sql, array $params = array()) {
+function prepare($sql, array $params = array(), $isAll = false) {
 	global $pdo;
+
+	if(!$isAll && !strncasecmp($sql, 'SELECT ', 7) && stripos($sql, ' LIMIT ') === false) {
+		$sql .= ' LIMIT 1';
+	}
 
 	try {
 		$stmt = $pdo->prepare($sql);
@@ -765,9 +769,7 @@ function actionLogout($uid, $deskId, $deskPosition) {
 	unset($_SESSION['landlords']);
 
 	if($deskId) {
-		$sql = 'SELECT isPlaying FROM desks WHERE deskId=?';
-		$params = array($uid);
-		if(!prepare($sql, $params)->fetchColumn()) {
+		if(!getDeskById($deskId, 0,'isPlaying')) {
 			$sql = 'UPDATE users SET deskId=0,deskPosition=NULL WHERE uid=?';
 			$params = array($uid);
 			prepare($sql, $params);
@@ -794,15 +796,48 @@ function arrayNumeric(array &$ret) {
 	}
 }
 
+// @params $type 数值类型: fetchColumn($type), 布尔类型: OBJ(true)/ASSOC(false), 'n': NUM, 'raw': stmt
+function getDeskById($deskId, $type = true, $fields = '*') {
+	$sql = 'SELECT ' . $fields . ' FROM desks WHERE deskId=?';
+	$params = array($deskId);
+	
+	if($isObject === 'raw') {
+		return prepare($sql, $params);
+	}
+
+	if($isObject === 'n') {
+		return prepare($sql, $params)->fetch(PDO::FETCH_NUM);
+	}
+
+	if(is_numeric($isObject)) {
+		return prepare($sql, $params)->fetchColumn($isObject);
+	}
+
+	return prepare($sql, $params)->fetch($isObject ? PDO::FETCH_OBJ : PDO::FETCH_ASSOC);
+}
+
+function lastLeads($deskId, $openGames, & $weightPosition = '', & $leads = '', $leadName = '', & $leadLabel = '') {
+	$sql = 'SELECT weightPosition, leads, leadName, leadLabel FROM desk_action_logs WHERE deskId=? AND openGames=? AND actionType = ? ORDER BY logId DESC';
+	$params = array($deskId, $openGames, ACTION_TYPE_LEAD);
+	$ret = prepare($sql, $params)->fetch(PDO::FETCH_NUM);
+	if($ret) {
+		list($weightPosition, $leads, $leadName, $leadLabel) = $ret;
+	}
+
+	return $ret;
+}
+
 // 游戏初始化
 function actionInit($uid, $username, $deskId, $deskPosition, $scores, $isWoman, $action) {
 	$isPlaying = 0;
 	$maxLogId = 0;
+	$lastLeadPosition = $deskPosition;
+	$lastLeads = '';
+	$lastLeadName = '';
+	$lastLeadLabel = '';
 
 	if($deskId) {
-		$sql = 'SELECT * FROM desks WHERE deskId=?';
-		$params = array($deskId);
-		extract(prepare($sql, $params)->fetch(PDO::FETCH_ASSOC));
+		extract(getDeskById($deskId, false));
 
 		if($aUid && $aUid !== $uid) {
 			$sql = 'SELECT username, scores, isWoman FROM users WHERE uid=?';
@@ -868,9 +903,7 @@ function actionInit($uid, $username, $deskId, $deskPosition, $scores, $isWoman, 
 			$params = array($weightPosition, $weightDateline, $weightTime, $aCards, $bCards, $cCards, $cards, $deskId);
 			prepare($sql, $params);
 
-			$sql = 'SELECT openGames FROM desks WHERE deskId=?';
-			$params = array($deskId);
-			$openGames = prepare($sql, $params)->fetchColumn();
+			$openGames = getDeskById($deskId, 0, 'openGames');
 		}
 
 		if($isPlaying) {
@@ -884,9 +917,13 @@ function actionInit($uid, $username, $deskId, $deskPosition, $scores, $isWoman, 
 			$sql = 'SELECT MAX(logId) FROM desk_action_logs WHERE deskId=? AND openGames=?';
 			$params = array($deskId, $openGames);
 			$maxLogId = prepare($sql, $params)->fetchColumn();
-		}
 
-		$cards = preg_replace('/[A-Z0-9]+/', 'NN', $cards);
+			lastLeads($deskId, $openGames, $lastLeadPosition, $lastLeads, $lastLeadName, $lastLeadLabel);
+			
+			if($isPlaying <= 1) {
+				$cards = preg_replace('/[A-Z0-9]+/', 'NN', $cards);
+			}
+		}
 
 		unset($sql, $params);
 	}
@@ -945,9 +982,7 @@ function actionStart($uid, $username, $deskId, $deskPosition, $scores, $notDeskI
 // 游戏的换桌
 function actionChange($uid, $username, $deskId, $deskPosition, $scores) {
 	if($deskId) {
-		$sql = 'SELECT isPlaying FROM desks WHERE deskId=?';
-		$params = array($deskId);
-		if(prepare($sql, $params)->fetchColumn()) {
+		if(getDeskById($deskId, 0, 'isPlaying')) {
 			return array(
 				'eval' => 'this.message("游戏已开始！")'
 			);
@@ -991,7 +1026,7 @@ function callLandlords($uid, $deskId, $openGames, $deskPosition, $cards, $isRob=
 
 	$sql = 'SELECT uid,actionType,weightPosition FROM desk_action_logs WHERE deskId=? AND openGames=? AND actionType IN(?,?) ORDER BY logId';
 	$params = array($deskId, $openGames, ACTION_TYPE_ROB_LANDLORDS, ACTION_TYPE_NO_ROB);
-	$stmt = prepare($sql, $params);
+	$stmt = prepare($sql, $params, true);
 
 	$rowCount = $stmt->rowCount();
 	if($rowCount < 3) {
@@ -1023,9 +1058,7 @@ function callLandlords($uid, $deskId, $openGames, $deskPosition, $cards, $isRob=
 }
 
 function actionCall($uid, $deskId, $deskPosition, $isRob) {
-	$sql = 'SELECT isPlaying, openGames, weightPosition, ' . $deskPosition . 'Uid, cards FROM desks WHERE deskId=?';
-	$params = array($deskId);
-	list($isPlaying, $openGames, $weightPosition, $pUid, $cards) = prepare($sql, $params)->fetch(PDO::FETCH_NUM);
+	list($isPlaying, $openGames, $weightPosition, $pUid, $cards) = getDeskById($deskId, false, 'isPlaying, openGames, weightPosition, ' . $deskPosition . 'Uid, cards');
 	if($isPlaying != 1 || $deskPosition !== $weightPosition || $pUid != $uid) {
 		return array(
 			'eval' => 'this.message("还没轮到你操作呢！")',
@@ -1039,9 +1072,7 @@ function actionCall($uid, $deskId, $deskPosition, $isRob) {
 }
 
 function actionSeedCards($uid, $deskId, $deskPosition) {
-	$sql = 'SELECT isPlaying, openGames, weightPosition, ' . $deskPosition . 'Uid, ' . $deskPosition . 'Cards FROM desks WHERE deskId=?';
-	$params = array($deskId);
-	list($isPlaying, $openGames, $weightPosition, $pUid, $pCards) = prepare($sql, $params)->fetch(PDO::FETCH_NUM);
+	list($isPlaying, $openGames, $weightPosition, $pUid, $pCards) = getDeskById($deskId, 'n', 'isPlaying, openGames, weightPosition, ' . $deskPosition . 'Uid, ' . $deskPosition . 'Cards');
 	if($isPlaying != 2 || $deskPosition !== $weightPosition || $pUid != $uid) {
 		return array(
 			'eval' => 'this.message("还没轮到你操作呢！")',
@@ -1065,9 +1096,7 @@ function actionSeedCards($uid, $deskId, $deskPosition) {
 }
 
 function actionDouble($uid, $deskId, $deskPosition, $isDouble) {
-	$sql = 'SELECT isPlaying, openGames, weightPosition, ' . $deskPosition . 'Uid FROM desks WHERE deskId=?';
-	$params = array($deskId);
-	list($isPlaying, $openGames, $weightPosition, $pUid) = prepare($sql, $params)->fetch(PDO::FETCH_NUM);
+	list($isPlaying, $openGames, $weightPosition, $pUid) = getDeskById($deskId, 'n', 'isPlaying, openGames, weightPosition, ' . $deskPosition . 'Uid');
 	if($isPlaying != 2 || $deskPosition !== $weightPosition || $pUid != $uid) {
 		return array(
 			'eval' => 'this.message("还没轮到你操作呢！")',
@@ -1086,7 +1115,16 @@ function actionDouble($uid, $deskId, $deskPosition, $isDouble) {
 	);
 }
 
-function actionLead($cards) {
+function actionLead($uid, $deskId, $deskPosition, $cards) {
+	$desk = getDeskById($deskId);
+
+	$lastLeadPosition = $deskPosition;
+	$lastLeads = '';
+	$lastLeadName = '';
+	$lastLeadLabel = '';
+
+	lastLeads($deskId, $desk->openGames, $lastLeadPosition, $lastLeads, $lastLeadName, $lastLeadLabel);
+
 	$rule = LeadCardRule::get($cards);
 
 	return array(
@@ -1106,9 +1144,7 @@ function notLead($uid, $deskId, $openGames, $deskPosition) {
 }
 
 function actionNotLead($uid, $deskId, $deskPosition) {
-	$sql = 'SELECT isPlaying, openGames, weightPosition, ' . $deskPosition . 'Uid FROM desks WHERE deskId=?';
-	$params = array($deskId);
-	list($isPlaying, $openGames, $weightPosition, $pUid) = prepare($sql, $params)->fetch(PDO::FETCH_NUM);
+	list($isPlaying, $openGames, $weightPosition, $pUid) = getDeskById($deskId, 'n', 'isPlaying, openGames, weightPosition, ' . $deskPosition . 'Uid');
 	if($isPlaying != 3 || $deskPosition !== $weightPosition || $pUid != $uid) {
 		return array(
 			'eval' => 'this.message("还没轮到你操作呢！")',
@@ -1123,9 +1159,7 @@ function actionNotLead($uid, $deskId, $deskPosition) {
 }
 
 function actionProcess($uid, $deskId, $maxLogId) {
-	$sql = 'SELECT * FROM desks WHERE deskId=?';
-	$params = array($deskId);
-	$desk = prepare($sql, $params)->fetchObject();
+	$desk = getDeskById($deskId);
 
 	$sql = 'SELECT * FROM desk_action_logs WHERE deskId=? AND openGames=?';
 	$params = array($deskId, $desk->openGames);
@@ -1133,7 +1167,7 @@ function actionProcess($uid, $deskId, $maxLogId) {
 		$sql .= ' AND logId>?';
 		$params[] = $maxLogId;
 	}
-	$stmt = prepare($sql . ' ORDER BY logId', $params);
+	$stmt = prepare($sql . ' ORDER BY logId', $params, true);
 
 	$ret = array();
 	$ret['actions'] = [];
@@ -1163,9 +1197,7 @@ function confirmDouble($deskId, $openGames) {
 }
 
 function actionTimeout($uid, $deskId, $deskPosition) {
-	$sql = 'SELECT * FROM desks WHERE deskId=?';
-	$params = array($deskId);
-	$desk = prepare($sql, $params)->fetchObject();
+	$desk = getDeskById($deskId);
 	if($deskPosition !== $desk->weightPosition || $desk->{$deskPosition . 'Uid'} != $uid) {
 		return array(
 			'eval' => 'this.message("还没轮到你操作呢！")',

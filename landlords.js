@@ -159,71 +159,6 @@
 		};
 	});
 
-	// 54张牌的基本样式显示Demo
-	$.landlordsDemo = function() {
-		var zIndex = 54;
-		var wrapperElem = $('<div style="padding-left:' + $.landlordsGlobalOptions.paddingLeftOrTop + ';"></div>').appendTo(document.body);
-		var wrapperRightElem = $('<div style="float:right;padding-left:20px;padding-top:' + $.landlordsGlobalOptions.paddingLeftOrTop + '"></div>').appendTo(document.body);
-		var wrapperLeftElem = $('<div style="padding-left:20px;padding-top:' + $.landlordsGlobalOptions.paddingLeftOrTop + '"></div>').appendTo(document.body);
-		var wrapper2Elem = $('<div style="margin-top:10px;padding-left:' + $.landlordsGlobalOptions.paddingLeftOrTopPercent + ';"></div>').appendTo(document.body);
-		var wrapper2RightElem = $('<div style="float:right;padding-left:20px;padding-top:' + $.landlordsGlobalOptions.paddingLeftOrTopPercent + ';padding-bottom:10px;"></div>').appendTo(document.body);
-		var wrapper2LeftElem = $('<div style="padding-left:20px;padding-top:' + $.landlordsGlobalOptions.paddingLeftOrTopPercent + ';padding-bottom:10px;"></div>').appendTo(document.body);
-		var i, k, puke54Array = [];
-
-		for(k in $.landlordsGlobalOptions.puke54Object) {
-			puke54Array.push(k);
-		}
-
-		while(puke54Array.length > 0) {
-			if(puke54Array.length > 1) {
-				i = $.landlords.prototype.randInt(puke54Array.length);
-				k = puke54Array[i];
-				puke54Array.splice(i, 1);
-			} else {
-				k = puke54Array.pop();
-			}
-
-			$.landlords.prototype.getPukeElemForNormal(k).css({
-				marginTop: '20px',
-				marginBottom: '10px',
-				marginTop: '20px'
-			}).appendTo(wrapperElem).click(function() {
-				$(this).css('marginTop', $(this).css('marginTop') == '0px' ? '20px' : '0px');
-			});
-
-			$.landlords.prototype.getPukeElemForR90(k).css({
-				marginLeft:'-20px'
-			}).appendTo(wrapperLeftElem).click(function() {
-				$(this).css('marginLeft', $(this).css('marginLeft') == '0px' ? '-20px' : '0px');
-			}).clone().css({
-				position: 'relative',
-				zIndex: zIndex--
-			}).appendTo(wrapperRightElem).click(function() {
-				$(this).css('marginLeft', $(this).css('marginLeft') == '0px' ? '-20px' : '0px');
-			});
-
-			$.landlords.prototype.getPukeElemForNormalPercent(k).css({
-				marginTop: '20px'
-			}).appendTo(wrapper2Elem).click(function() {
-				$(this).css('marginTop', $(this).css('marginTop') == '0px' ? '20px' : '0px');
-			});
-
-			$.landlords.prototype.getPukeElemForR90Percent(k).css({
-				marginLeft:'-20px',
-				marginBottom: '10px'
-			}).appendTo(wrapper2LeftElem).click(function() {
-				$(this).css('marginLeft', $(this).css('marginLeft') == '0px' ? '-20px' : '0px');
-			}).clone().css({
-				position: 'relative',
-				zIndex: zIndex--
-			}).appendTo(wrapper2RightElem).click(function() {
-				$(this).css('marginLeft', $(this).css('marginLeft') == '0px' ? '-20px' : '0px');
-			});
-		}
-
-		$('<div style="clear:both;"></div>').appendTo(wrapperElem).clone().appendTo(wrapper2Elem);
-	};
-
 	/**
 	 * 斗地主游戏主函数 必须使用 new方法调用
 	 * 
@@ -784,6 +719,8 @@
 				self.weightPosition = json.weightPosition;
 				self.isPlaying = json.isPlaying;
 				self.maxLogId = json.maxLogId;
+				self.lastLeadPosition = json.lastLeadPosition;
+				self.lastLeads = json.lastLeads;
 
 				if(json.isPlaying) {
 					clearTimeout(self.initTimer);
@@ -876,15 +813,17 @@
 						break;
 
 					case ACTION_TYPE_SEED_CARDS:
+						var cards = v.beforeCards.split(',');
+
 						if(self.rightPosition === v.weightPosition) {
-							self.rightArray = v.beforeCards.split(',');
+							self.rightArray = cards;
 							self.rightArray.sort(function(a, b) {
 								return $.landlordsGlobalOptions.puke54Object[b].sort - $.landlordsGlobalOptions.puke54Object[a].sort;
 							});
 							self.renderRight();
 						}
 						if(self.leftPosition === v.weightPosition) {
-							self.leftArray = v.beforeCards.split(',');
+							self.leftArray = cards;
 							self.leftArray.sort(function(a, b) {
 								return $.landlordsGlobalOptions.puke54Object[b].sort - $.landlordsGlobalOptions.puke54Object[a].sort;
 							});
@@ -899,6 +838,18 @@
 						break;
 					case ACTION_TYPE_LEAD:
 						msg = '出牌';
+
+						self.lastLeadPosition = v.weightPosition;
+						self.lastLeads = v.leads;
+
+						if(self.playerPosition === v.weightPosition) {
+						}
+
+						if(self.rightPosition === v.weightPosition) {
+						}
+
+						if(self.leftPosition === v.weightPosition) {
+						}
 						break;
 					case ACTION_TYPE_NO_LEAD:
 						msg = '不出';

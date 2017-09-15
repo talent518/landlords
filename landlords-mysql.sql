@@ -25,12 +25,14 @@ CREATE TABLE `desk_action_logs` (
   `weightPosition` enum('a','b','c') DEFAULT NULL COMMENT '桌位',
   `beforeCards` varchar(100) DEFAULT NULL COMMENT '出牌前手中的牌',
   `leads` varchar(100) DEFAULT NULL COMMENT '出的牌',
+  `leadName` varchar(20) DEFAULT NULL COMMENT '出牌规则名(英文)',
+  `leadLabel` varchar(20) DEFAULT NULL COMMENT '出牌规则名(中文)',
   `isRobot` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '是否机器人处理',
   `dateline` int(10) NOT NULL COMMENT '出牌时间戳',
   `createTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '出牌时间',
   PRIMARY KEY (`logId`),
   KEY `deskId` (`deskId`,`openGames`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='桌位玩家出牌日志表';
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8 COMMENT='桌位玩家出牌日志表';
 
 /*Table structure for table `desks` */
 
