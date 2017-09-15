@@ -91,7 +91,7 @@
 					title: '大王(big wang)',
 					Y: 4,
 					X: 0,
-					sort: 47,
+					sort: 53,
 					points: pointsString.charAt(17)
 				};
 				// console.log($.landlordsGlobalOptions.puke54Object.BW);
@@ -100,7 +100,7 @@
 					title: '小王(little wang)',
 					Y: 4,
 					X: 1,
-					sort: 46,
+					sort: 52,
 					points: pointsString.charAt(16)
 				};
 				// console.log($.landlordsGlobalOptions.puke54Object.LW);
@@ -109,7 +109,7 @@
 					title: '背面',
 					Y: 4,
 					X: 2,
-					sort: 48,
+					sort: -1,
 					points: ' '
 				};
 				// console.log($.landlordsGlobalOptions.puke54Object.NN);
@@ -121,7 +121,7 @@
 				title: pukeTitleArray[y].replace('(', (x == 0 ? '尖儿' : pukeXArray[x]) + '(').replace(')', ' ' + (x == 0 ? 'Ace' : pukeXArray[x]) + ')'),
 				Y: y,
 				X: x,
-				sort: (x == 0 ? 44 : (x == 1 ? 45 : (x - 2) * 4 + (3-y))),
+				sort: ((x < 2 ? x+11 : x-2) * 4 + (3-y)),
 				points: x > 1 ? pointsString.charAt(x + 1) : pointsString.charAt(15 - x)
 			};
 			// console.log($.landlordsGlobalOptions.puke54Object[pukeYArray[y] + pukeXArray[x]]);
@@ -374,7 +374,9 @@
 			});
 
 			self.btnLeadElem.click(function() {
-				self.message('lead',0,1);
+				self.playerElem.disabled(true);
+
+				self.post('lead', {cards: self.leadCards.join(',')});
 			});
 
 			self.btnNotLeadElem.click(function() {
@@ -1250,7 +1252,7 @@
 		},
 		initLeadCardRules: function() {
 			var cards = [];
-			this.playerElem.children('.selected').each(function() {
+			this.selectElems = this.playerElem.children('.selected').each(function() {
 				cards.push($(this).attr('k'));
 			});
 
@@ -1285,13 +1287,15 @@
 				return false;
 			}
 
-			console.log(o);
+			self.leadCards = o.cards;
+
+			// console.log(o);
 
 			for(k in self.validRules) {
 				if(self.validRules[k].call(self, o)) {
 					self.cardLabel = self.labels[k];
 					self.cardName = k;
-					console.log(self.cardLabel);
+					// console.log(self.cardLabel);
 					return true;
 				}
 			}

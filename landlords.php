@@ -1086,6 +1086,17 @@ function actionDouble($uid, $deskId, $deskPosition, $isDouble) {
 	);
 }
 
+function actionLead($cards) {
+	$rule = LeadCardRule::get($cards);
+
+	return array(
+		'status' => $rule->valid(),
+		'name' => $rule->name,
+		'label' => $rule->label,
+		'eval' => 'console.log(json);this.selectElems.remove();this.playerElem.disabled(false);',
+	);
+}
+
 function notLead($uid, $deskId, $openGames, $deskPosition) {
 	$sql = 'INSERT INTO desk_action_logs (uid, deskId, openGames, actionType, weightPosition, dateline, createTime)VALUES(?, ?, ?, ?, ?, UNIX_TIMESTAMP(), NOW())';
 	$params = array($uid, $deskId, $openGames, ACTION_TYPE_NO_LEAD, $deskPosition);
@@ -1180,4 +1191,154 @@ function actionTimeout($uid, $deskId, $deskPosition) {
 		'status' => $status,
 		'eval'=>'this.btnElems.hide();'
 	);
+}
+
+class LeadCardRule {
+	private $cards, $s, $m4, $m3, $m2, $s0;
+
+	private $name, $label;
+
+	const RE4 = '/(2222|AAAA|KKKK|QQQQ|JJJJ|1111|9999|8888|7777|6666|5555|4444|3333)/';
+	const RE3 = '/(222|AAA|KKK|QQQ|JJJ|111|999|888|777|666|555|444|333)/';
+	const RE2 = '/(WW|22|AA|KK|QQ|JJ|11|99|88|77|66|55|44|33)/';
+
+	private $labels = array(
+		'single' => '单', // 1张
+		'pair' => '对子', // 2张
+		'wangBomb' => '王炸', // 2张
+		'three' => '三个n', // 3张
+		'threeWithOne' => '三带一', // 4张
+		'bomb' => '炸弹', // 4张
+		'threeWithTwo' => '三带二', // 5张
+		'straight' => '顺子', // >=5张
+		'fourWithTwo' => '四带二', // 6张
+		'continuityPair' => '连对', // >=6张
+		'airplane' => '飞机' // >=6张
+	);
+
+	public function __construct($s) {
+		$this->cards = explode(',', $s);
+
+		self::sortCards($this->cards);
+
+		$this->s = preg_replace('/(H|D|C|S|0)/', '', implode('', $this->cards));
+
+		$matches = null;
+		preg_match_all(self::RE4, $this->s, $matches);
+		$this->m4 = $matches[0];
+		$this->s0 = preg_replace(self::RE4, '', $this->s);
+
+		preg_match_all(self::RE3, $this->s0, $matches);
+		$this->m3 = $matches[0];
+		$this->s0 = preg_replace(self::RE3, '', $this->s0);
+
+		preg_match_all(self::RE2, $this->s0, $matches);
+		$this->m2 = $matches[0];
+		$this->s0 = preg_replace(self::RE2, '', $this->s0);
+	}
+
+	public function __get($name) {
+		return $this->$name;
+	}
+
+	public function valid() {
+		foreach($this->labels as $k => &$label) {
+			if($this->$k()) {
+				$this->name = $k;
+				$this->label = $label;
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	public function single() { // 单
+		return count($this->cards) === 1;
+	}
+
+	public function straight() { // 顺子
+		return !$this->m4 && !$this->m3 && !$this->m2 && strlen($this->s0) >= 5 && strpos('AKQJ109876543', $this->s0) !== false;
+	}
+	public function pair() { // 对子
+		return !$this->m4 && !$this->m3 && strlen($this->s0) === 0 && $this->m2 && count($this->m2) === 1 && $this->m2[0] !== 'WW';
+	}
+	public function wangBomb() { // 王炸
+		return !$this->m4 && !$this->m3 && strlen($this->s0) === 0 && $this->m2 && count($this->m2) === 1 && $this->m2[0] === 'WW';
+	}
+	public function three() { // 3个n：
+		if(!$this->m4 && !$this->m2 && strlen($this->s0) === 0 && $this->m3 && count($this->m3) === 1) {
+			$this->labels['three'] = '三个' + substr($this->cards[0], 1);
+
+			return true;
+		}
+
+		return false;
+	}
+	public function threeWithOne() { // 3背1
+		return !$this->m4 && !$this->m2 && strlen($this->s0) === 1 && $this->m3 && count($this->m3) === 1;
+	}
+	public function bomb() { // 炸弹
+		return !$this->m3 && !$this->m2 && strlen($this->s0) === 0 && $this->m4 && count($this->m4) === 1;
+	}
+	public function threeWithTwo() { // 3背2
+		return !$this->m4 && strlen($this->s0) === 0 && $this->m3 && count($this->m3) === 1 && $this->m2 && count($this->m2) === 1 && $this->m2[0] !== 'WW';
+	}
+	public function fourWithTwo() { // 四带二, 四带两对
+		if($this->m2 && count($this->m2) === 2) {
+			$this->labels['fourWithTwo'] = '四带两对';
+		} else {
+			$this->labels['fourWithTwo'] = '四带二';
+		}
+		return !$this->m3 && $this->m4 && count($this->m4) === 1 && ((!$this->m2 && strlen($this->s0) === 2) || (strlen($this->s0) === 0 && $this->m2 && count($this->m2) <= 2 && $this->m2[0] !== 'WW'));
+	}
+	public function continuityPair() { // 连对: 最少3连对
+		if(strlen($this->s) < 6 || strlen($this->s) % 2) {
+			return false;
+		}
+
+		return strlen($this->s) >= 6 && strlen($this->s) % 2 === 0 && strpos('AAKKQQJJ1199887766554433', $this->s) !== false && $this->s[0] === $this->s[1];
+	}
+	public function airplane() { // 连对: 最少3连对
+		if($this->m4 || !$this->m3 || count($this->m3)<2 || ($this->m2 && strlen($this->s0) && count($this->m3) !== count($this->m2)*2 + strlen($this->s0)) || ($this->m2 && !strlen($this->s0) && ($this->m2[0] === 'WW' || (count($this->m3) !== count($this->m2) && count($this->m3) !== count($this->m2)*2))) ||  (!$this->m2 && strlen($this->s0) && count($this->m3) !== strlen($this->s0))) {
+			return false;
+		}
+
+		return strpos('AAAKKKQQQJJJ111999888777666555444333', implode('', $this->m3)) !== false;
+	}
+
+	public static function sortCards(&$cards) {
+		$sorts = self::getSortWeigths();
+
+		usort($cards, function($a, $b) use($sorts) {
+			return $sorts[$a] > $sorts[$b] ? -1 : ($sorts[$a] == $sorts[$b] ? 0 : 1);
+		});
+	}
+
+	private static $sorts;
+	public static function getSortWeigths() {
+		if(self::$sorts !== null) {
+			return self::$sorts;
+		}
+
+		self::$sorts = array(
+			'NN' => -1,
+		);
+		$i = 0;
+		foreach(array(3, 4, 5, 6, 7, 8, 9, 10, 'J', 'Q', 'K', 'A', 2) as $i2=>$k2) {
+			foreach(array('S', 'C', 'D', 'H') as $i1=>$k1) {
+				self::$sorts[$k1 . $k2] = $i++;
+			}
+		}
+
+		self::$sorts['LW'] = 52;
+		self::$sorts['BW'] = 53;
+
+		return self::$sorts;
+	}
+
+	public static function get($s) {
+		return new static($s);
+	}
+
 }
