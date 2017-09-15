@@ -374,29 +374,7 @@
 			});
 
 			self.btnLeadElem.click(function() {
-				var cards = [];
-				var rules = {
-					straight: function() { // 顺子
-					},
-					continuityPair: function() { // 连对
-					},
-					pair: function() { // 对子
-					},
-					pair3Carrying: function() { // 3背2
-					},
-					one3Carrying: function() { // 3背1
-					},
-					friedKing: function() { // 王炸
-					},
-					single: function() {
-					}
-				};
-				self.playerElem.children('.selected').each(function() {
-					cards.push($(this).attr('k'));
-				});
-				console.log(cards);
-
-				// self.message('lead',0,1);
+				self.message('lead',0,1);
 			});
 
 			self.btnNotLeadElem.click(function() {
@@ -930,6 +908,8 @@
 
 						self.playerMsgElem.text(msg);
 						self.playerDownTimer.clean();
+
+						self.playerElem.children('.selected').removeClass('selected');
 						
 						if(isKeep) {
 							self.rightDownTimer.clean();
@@ -1075,7 +1055,7 @@
 					break;
 				}
 				case 3: {
-					self.btnLeadElem.show();
+					self.btnLeadElem.show().disabled(true);
 					self.btnNotLeadElem.show();
 					self.btnPromptElem.show();
 					break;
@@ -1114,8 +1094,8 @@
 				var downElem = $([]);
 				var selectBoxElem = $([]);
 
-				self.playerElem.children().mousedown(function(e) {
-					if(isDowned || e.button === 2) {
+				self.playerElem.children('.puke').mousedown(function(e) {
+					if(isDowned || e.button === 2 || !self.btnLeadElem.is(':visible')) {
 						return;
 					}
 
@@ -1126,7 +1106,7 @@
 					downElem = $(this);
 					selectBoxElem = $('<div style="position:absolute;left:-100px;top:-100px;width:0px;height:0px;overflow:hidden;border:1px dotted gray;"></div>').appendTo(document.body);
 
-					self.playerElem.children().each(function() {
+					self.playerElem.children('.puke').each(function() {
 						var pos = $(this).offset();
 						rects.push({
 							elem: $(this),
@@ -1166,6 +1146,8 @@
 					if(X == pageX && Y == pageY) {
 						downElem.toggleClass('selected');
 						selectBoxElem.remove();
+
+						self.btnLeadElem.disabled(!self.validLeadCard());
 						return;
 					}
 
@@ -1191,11 +1173,129 @@
 						}
 					});
 					selectBoxElem.remove();
+
+					self.btnLeadElem.disabled(!self.validLeadCard());
 				});
 				$('<div style="clear:both;"></div>').appendTo(self.playerElem);
 			} else {
 				return self.getPukeElemForNormal(k).appendTo(self.playerElem);
 			}
+		},
+		labels: {
+			single: '单', // 1张
+			pair: '对子', // 2张
+			wangBomb: '王炸', // 2张
+			three: '三个n', // 3张
+			threeWithOne: '三带一', // 4张
+			bomb: '炸弹', // 4张
+			threeWithTwo: '三带二', // 5张
+			straight: '顺子', // >=5张
+			fourWithTwo: '四带二', // 6张
+			continuityPair: '连对', // >=6张
+			airplane: '飞机' // >=6张
+		},
+		validRules: {
+			single: function(o) { // 单
+				return o.cards.length === 1;
+			},
+			straight: function(o) { // 顺子
+				return !o.m4 && !o.m3 && !o.m2 && o.s0.length>=5 && 'AKQJ109876543'.indexOf(o.s0) >= 0;
+			},
+			pair: function(o) { // 对子
+				return !o.m4 && !o.m3 && o.s0.length === 0 && o.m2 && o.m2.length === 1 && o.m2[0] !== 'WW';
+			},
+			wangBomb: function(o) { // 王炸
+				return !o.m4 && !o.m3 && o.s0.length === 0 && o.m2 && o.m2.length === 1 && o.m2[0] === 'WW';
+			},
+			three: function(o) { // 3个n：
+				if(!o.m4 && !o.m2 && o.s0.length === 0 && o.m3 && o.m3.length === 1) {
+					this.labels.three = '三个' + o.cards[0].substr(1);
+
+					return true;
+				}
+
+				return false;
+			},
+			threeWithOne: function(o) { // 3背1
+				return !o.m4 && !o.m2 && o.s0.length === 1 && o.m3 && o.m3.length === 1;
+			},
+			bomb: function(o) { // 炸弹
+				return !o.m3 && !o.m2 && o.s0.length === 0 && o.m4 && o.m4.length === 1;
+			},
+			threeWithTwo: function(o) { // 3背2
+				return !o.m4 && o.s0.length === 0 && o.m3 && o.m3.length === 1 && o.m2 && o.m2.length === 1 && o.m2[0] !== 'WW';
+			},
+			fourWithTwo: function(o) { // 四带二, 四带两对
+				if(o.m2 && o.m2.length === 2) {
+					this.labels.fourWithTwo = '四带两对';
+				} else {
+					this.labels.fourWithTwo = '四带二';
+				}
+				return !o.m3 && o.m4 && o.m4.length === 1 && ((!o.m2 && o.s0.length === 2) || (o.s0.length === 0 && o.m2 && o.m2.length <= 2 && o.m2[0] !== 'WW'));
+			},
+			continuityPair: function(o) { // 连对: 最少3连对
+				if(o.s.length < 6 || o.s.length % 2) {
+					return false;
+				}
+
+				return o.s.length >= 6 && o.s.length % 2 === 0 && 'AAKKQQJJ1199887766554433'.indexOf(o.s) >= 0 && o.s[0] === o.s[1];
+			},
+			airplane: function(o) { // 连对: 最少3连对
+				if(o.m4 || !o.m3 || o.m3.length<2 || (o.m2 && o.s0.length && o.m3.length !== o.m2.length*2 + o.s0.length) || (o.m2 && !o.s0.length && (o.m2[0] === 'WW' || (o.m3.length !== o.m2.length && o.m3.length !== o.m2.length*2))) ||  (!o.m2 && o.s0.length && o.m3.length !== o.s0.length)) {
+					return false;
+				}
+
+				return 'AAAKKKQQQJJJ111999888777666555444333'.indexOf(o.m3.join('')) >= 0;
+			}
+		},
+		initLeadCardRules: function() {
+			var cards = [];
+			this.playerElem.children('.selected').each(function() {
+				cards.push($(this).attr('k'));
+			});
+
+			if(cards.length === 0) {
+				return false;
+			} else {
+				var o = {cards: cards};
+				
+				o.s = cards.join('').replace(/(H|D|C|S|0)/g, '');
+
+				o.re4 = /(2222|AAAA|KKKK|QQQQ|JJJJ|1111|9999|8888|7777|6666|5555|4444|3333)/g;
+				o.re3 = /(222|AAA|KKK|QQQ|JJJ|111|999|888|777|666|555|444|333)/g;
+				o.re2 = /(WW|22|AA|KK|QQ|JJ|11|99|88|77|66|55|44|33)/g;
+
+				o.m4 = o.s.match(o.re4);
+				o.s0 = o.s.replace(o.re4, '');
+
+				o.m3 = o.s0.match(o.re3);
+				o.s0 = o.s0.replace(o.re3, '');
+
+				o.m2 = o.s0.match(o.re2);
+				o.s0 = o.s0.replace(o.re2, '');
+
+				return o;
+			}
+		},
+		validLeadCard: function() {
+			var self = this;
+			var o = this.initLeadCardRules();
+
+			if(!o) {
+				return false;
+			}
+
+			console.log(o);
+
+			for(k in self.validRules) {
+				if(self.validRules[k].call(self, o)) {
+					self.cardLabel = self.labels[k];
+					self.cardName = k;
+					console.log(self.cardLabel);
+					return true;
+				}
+			}
+			return false;
 		},
 		renderLeft: function(k) {
 			var self = this;
@@ -1232,9 +1332,9 @@
 		},
 		resizePlayer: function() {
 			var self = this;
-			var size = self.playerElem.children().size();
+			var size = self.playerElem.children('.puke').size();
 			if(size) {
-				var width = (size - 1) * ($.landlordsGlobalOptions.puke54Options.width - parseInt($.landlordsGlobalOptions.paddingLeftOrTop)) + $.landlordsGlobalOptions.puke54Options.width;
+				var width = size * ($.landlordsGlobalOptions.puke54Options.width - parseInt($.landlordsGlobalOptions.paddingLeftOrTop)) + $.landlordsGlobalOptions.puke54Options.width;
 				self.playerElem.css({
 					width: width,
 					marginLeft: Math.floor(-width/2) + 'px'
