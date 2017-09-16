@@ -1002,7 +1002,7 @@ function getDeskById($deskId, $type = true, $fields = '*') {
 	return prepare($sql, $params)->fetch($type ? PDO::FETCH_OBJ : PDO::FETCH_ASSOC);
 }
 
-function lastLeads($deskId, $openGames, & $weightPosition = '', & $leads = '', $leadName = '', & $leadLabel = '') {
+function lastLeads($deskId, $openGames, & $weightPosition = '', & $leads = '', & $leadName = '', & $leadLabel = '') {
 	$sql = 'SELECT weightPosition, leads, leadName, leadLabel FROM desk_action_logs WHERE deskId=? AND openGames=? AND actionType = ? ORDER BY logId DESC';
 	$params = array (
 		$deskId,
@@ -1453,8 +1453,8 @@ function actionLead($uid, $deskId, $deskPosition, $cards) {
 	}
 	
 	return array (
-		'eval' => 'console.log(json);this.selectElems.remove();this.resizePlayer();this.playerElem.disabled(false);' 
-	) + get_defined_vars();
+		'eval' => 'this.selectElems.remove();this.resizePlayer();this.playerElem.disabled(false);' 
+	)/*  + get_defined_vars() */;
 }
 
 function notLead($uid, $deskId, $openGames, $deskPosition) {

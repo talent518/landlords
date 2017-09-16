@@ -24,6 +24,15 @@
 	};
 
 	/**
+	 * 右截取n数组元素
+	 * 
+	 * @return Object {val1:key1,val2:key2,...}
+	 */
+	Array.prototype.rslice = function(n) {
+		return this.slice(this.length-n, this.length);
+	};
+
+	/**
 	 * 初始化多维数组
 	 * 
 	 * @param defArray Array 多维数组的定义: [z,y,x]
@@ -340,7 +349,33 @@
 			});
 
 			self.btnPromptElem.click(function() {
-				self.message('prompt',0,1);
+				var n = self.nPukes;
+				
+				self.selectElems = self.playerElem.children('.selected');
+				
+				self.btnLeadElem.disabled(self.selectElems.size() <= 0);
+				if(!self.promptLeads()) {
+					// self.btnNotLeadElem.click();
+					return;
+				}
+				self.btnLeadElem.disabled(false);
+				
+				if(self.nPukes !== n) {
+					self.n = 0;
+				}
+				
+				self.leadCards = self.cardPukes[self.n];
+				
+				self.playerElem.children().removeClass('selected');
+				$.each(self.leadCards, function(k, v) {
+					self.playerElem.find('[k="' + v + '"]').addClass('selected');
+				});
+				self.selectElems = self.playerElem.children('.selected');
+				
+				self.n++;
+				if(self.n >= self.cardPukes.length) {
+					self.n = 0;
+				}
 			});
 
 			self.btnSeedCardsElem.click(function() {
@@ -868,13 +903,14 @@
 						self.lastLeads = v.leads;
 						self.lastLeadName = v.leadName;
 						self.lastLeadLabel = v.leadLabel;
-
-						self.renderLeads();
 						break;
 					case ACTION_TYPE_NO_LEAD:
 						msg = '不出';
 						break;
 				}
+				
+				self.weightPosition = v.weightPosition;
+				
 				switch(v.weightPosition) {
 					case self.playerPosition:
 						self.btnElems.hide().disabled(false);
@@ -892,6 +928,7 @@
 							self.playerDownTimer = self.downTimer(self.playerTimerElem.show(), function(){self.post('timeout');});
 							self.renderBtn(json.isPlaying);
 						} else {
+							self.weightPosition = self.rightPosition;
 							self.rightMsgElem.text('');
 							self.rightLeadElem.empty();
 							self.rightDownTimer = self.downTimer(self.rightTimerElem.show());
@@ -908,6 +945,8 @@
 							self.rightLeadElem.empty();
 							self.rightDownTimer = self.downTimer(self.rightTimerElem.show());
 						} else {
+							self.weightPosition = self.leftPosition;
+							
 							self.leftMsgElem.text('');
 							self.leftLeadElem.empty();
 							self.leftDownTimer = self.downTimer(self.leftTimerElem.show());
@@ -924,6 +963,8 @@
 							self.leftLeadElem.empty();
 							self.leftDownTimer = self.downTimer(self.leftTimerElem.show());
 						} else {
+							self.weightPosition = self.playerPosition;
+							
 							self.playerMsgElem.text('');
 							self.playerLeadElem.empty();
 							self.playerDownTimer = self.downTimer(self.playerTimerElem.show(), function(){self.post('timeout');});
@@ -931,6 +972,10 @@
 							self.renderBtn(json.isPlaying);
 						}
 						break;
+				}
+				
+				if(v.actionType === ACTION_TYPE_LEAD) {
+					self.renderLeads();
 				}
 				self.maxLogId = Math.max(self.maxLogId, v.logId);
 			});
@@ -1007,11 +1052,12 @@
 
 			self.renderProcess({actions:[]});
 
+			self.renderLeads();
+
 			if(self.playerPosition === self.weightPosition) {
 				self.renderBtn(self.isPlaying);
 				self.playerDownTimer = self.downTimer(self.playerTimerElem.show(), function(){self.post('timeout');});
 			} else {
-				self.renderLeads();
 				if(self.rightPosition === self.weightPosition) {
 					self.rightDownTimer = self.downTimer(self.rightTimerElem.show());
 				} else if(self.leftPosition === self.weightPosition) {
@@ -1022,12 +1068,9 @@
 		renderLeads: function() {
 			var self = this;
 
-			self.lastLeadPosition;
-			self.lastLeads;
-			self.lastLeadName;
-			self.lastLeadLabel;
+			// console.log(self.lastLeadPosition, self.lastLeads, self.lastLeadName, self.lastLeadLabel);
 			
-			if(typeof(self.lastLeads) !== 'string' || self.lastLeads.length === 0) {
+			if(typeof(self.lastLeads) !== 'string' || self.lastLeads.length === 0 || self.weightPosition === self.lastLeadPosition) {
 				self.lastLeadRule = false;
 				return;
 			}
@@ -1037,11 +1080,15 @@
 			if(self.playerPosition === self.lastLeadPosition) {
 				self.playerMsgElem.text(self.lastLeadLabel);
 
-				var i;
+				var i, k;
 
 				self.playerLeadElem.empty();
 				for(i=0; i<self.lastLeadRule.cards.length; i++) {
-					self.getPukeElemForNormal(self.lastLeadRule.cards[i]).appendTo(self.playerLeadElem)
+					k = self.lastLeadRule.cards[i];
+					
+					self.playerLeadElem.find('[k="' + k + '"]').remove();
+					
+					self.getPukeElemForNormal(k).appendTo(self.playerLeadElem)
 				}
 
 				$('<div style="clear:both;"></div>').appendTo(self.playerLeadElem);
@@ -1058,13 +1105,15 @@
 			} else if(self.rightPosition === self.lastLeadPosition) {
 				self.rightMsgElem.text(self.lastLeadLabel);
 					
-				var i;
-			
-				var zIndex = 1;
+				var i, k, zIndex = 1;
 
 				self.rightLeadElem.empty();
 				for(i=0; i<self.lastLeadRule.cards.length; i++) {
-					self.getPukeElemForR90Percent(self.lastLeadRule.cards[i]).css({
+					k = self.lastLeadRule.cards[i];
+					
+					self.rightLeadElem.find('[k="' + k + '"]').remove();
+					
+					self.getPukeElemForR90Percent(k).css({
 						position: 'relative',
 						zIndex: zIndex++
 					}).prependTo(self.rightLeadElem);
@@ -1072,11 +1121,15 @@
 			} else if(self.leftPosition === self.lastLeadPosition) {
 				self.leftMsgElem.text(self.lastLeadLabel);
 
-				var i;
+				var i, k;
 
 				self.leftLeadElem.empty();
 				for(i=0; i<self.lastLeadRule.cards.length; i++) {
-					self.getPukeElemForR90Percent(self.lastLeadRule.cards[i]).appendTo(self.leftLeadElem);
+					k = self.lastLeadRule.cards[i];
+					
+					self.leftLeadElem.find('[k="' + k + '"]').remove();
+					
+					self.getPukeElemForR90Percent(k).appendTo(self.leftLeadElem);
 				}
 			}
 		},
@@ -1332,6 +1385,204 @@
 				return o.s.length === o2.s.length && f.call(this, o2) && this.charSortRule.indexOf(o.m3[0][0]) > this.charSortRule.indexOf(o2.m3[0][0]);
 			}
 		},
+		promptAddBomb: function(o, v, isIgnore) {
+			if(!isIgnore) {
+				for(k in o.m4) {
+					v.push(o.cards[k]);
+				}
+			}
+			
+			if(o.m2.W) {
+				v.push(o.cards.W);
+			}
+		},
+		promptRules: {
+			single: function(o, o2, v) { // 单
+				var k, i = this.charSortRule.indexOf(o.s[0]);
+				
+				i++;
+				for(;i<this.charSortRule.length;i++) {
+					k = this.charSortRule[i];
+					
+					if(o2.cards[k]) {
+						v.push(o2.cards[k].rslice(1));
+					}
+				}
+				
+				this.promptAddBomb(o2, v);
+			},
+			straight: function(o, o2, v) { // 顺子
+				// TODO
+				this.promptAddBomb(o2, v);
+			},
+			pair: function(o, o2, v) { // 对子
+				var k, i = this.charSortRule.indexOf(o.s[0]);
+				
+				if(i<0) {
+					return;
+				}
+				i++;
+				for(;i<this.charSortRule.length-1;i++) {
+					k = this.charSortRule[i];
+					
+					if(o2.m2[k]) {
+						v.push(o2.cards[k].rslice(2));
+					}
+				}
+				
+				this.promptAddBomb(o2, v);
+			},
+			wangBomb: function(o, o2, v) { // 王炸
+			},
+			three: function(o, o2, v) { // 3个n：
+				var k, i = this.charSortRule.indexOf(o.m3[0][1]);
+				
+				if(i<0) {
+					return;
+				}
+				i++;
+				for(;i<this.charSortRule.length-1;i++) {
+					k = this.charSortRule[i];
+					
+					if(o2.m3[k]) {
+						v.push(v.push(o2.cards[k].rslice(3)));
+					}
+				}
+				
+				this.promptAddBomb(o2, v);
+			},
+			threeWithOne: function(o, o2, v) { // 3背1
+				var k, i = this.charSortRule.indexOf(o.m3[0][1]);
+				
+				if(i<0) {
+					return;
+				}
+				i++;
+				for(;i<this.charSortRule.length-1;i++) {
+					k = this.charSortRule[i];
+					
+					if(o2.m3[k]) {
+						var a = v.push(o2.cards[k].rslice(3));
+						
+						$.each(o2.s.split('').reverse(), function($k,$v) {
+							if($v !== k) {
+								v.push(a.concat(o2.cards[$v].rslice(1)));
+							}
+						});
+					}
+				}
+				
+				this.promptAddBomb(o2, v);
+			},
+			bomb: function(o, o2, v) { // 炸弹
+				var k, i = this.charSortRule.indexOf(o.s[0]);
+				
+				if(i<0) {
+					return;
+				}
+				i++;
+				for(;i<this.charSortRule.length-1;i++) {
+					k = this.charSortRule[i];
+					
+					if(o2.m4[k]) {
+						v.push(o2.cards[k]);
+					}
+				}
+				
+				this.promptAddBomb(o2, v, true);
+			},
+			threeWithTwo: function(o, o2, v) { // 3背2
+				var k, i = this.charSortRule.indexOf(o.m3[0][1]);
+				
+				if(i<0) {
+					return;
+				}
+				i++;
+				for(;i<this.charSortRule.length-1;i++) {
+					k = this.charSortRule[i];
+					
+					if(o2.m3[k]) {
+						var a = o2.cards[k].rslice(3);
+						
+						$.each(o2.s.split('').reverse(), function($k,$v) {
+							var $a = o2.cards[$v];
+							if($v !== k && $a.length >= 2) {
+								v.push(a.concat($a.rslice(2)));
+							}
+						});
+					}
+				}
+				
+				this.promptAddBomb(o2, v);
+			},
+			fourWithTwo: function(o, o2, v) { // 四带二, 四带两对
+				var k, i = this.charSortRule.indexOf(o.m4[0][1]);
+				
+				if(i<0) {
+					return;
+				}
+				i++;
+				for(;i<this.charSortRule.length-1;i++) {
+					k = this.charSortRule[i];
+					
+					if(o2.m4[k]) {
+						var a = o2.cards[k];
+						
+						var a1 = [], a2 = [];
+						$.each(o2.s.split('').reverse(), function($k,$v) {
+							if($v === k) {
+								return;
+							}
+							
+							var $a = o2.cards[$v];
+							
+							if(o.s.length === 6 && $a) {
+								a1.push($v);
+							}
+							
+							if(o2.m2[$v]) {
+								a2.push($v);
+							}
+						});
+
+						if(a1.length >= 2) {
+							var i1, i2;
+							for(i1 = 0; i1 < a1.length-1; i1++) {
+								for(i2 = i1+1; i2 < a1.length; i2++) {
+									v.push(a.concat([o2.cards[a1[i1]].rslice(1), o2.cards[a1[i2]].rslice(1)]));
+								}
+							}
+						}
+						
+						if(a2.length === 0) {
+							continue;
+						}
+						if(o.s.length === 6) {
+							$.each(a2, function($k, $v) {
+								v.push(a.concat(o2.cards[$v].rslice(2)));
+							});
+						} else if(o.s.length === 8 && a2.length >= 2) {
+							var i1, i2;
+							for(i1 = 0; i1 < a2.length-1; i1++) {
+								for(i2 = i1+1; i2 < a2.length; i2++) {
+									v.push(a.concat(o2.cards[a1[i1]].rslice(2), o2.cards[a1[i2]].rslice(2)));
+								}
+							}
+						}
+					}
+				}
+				
+				this.promptAddBomb(o2, v);
+			},
+			continuityPair: function(o, o2, v) { // 连对: 最少3连对
+				// TODO
+				this.promptAddBomb(o2, v);
+			},
+			airplane: function(o, o2, v) { // 飞机
+				// TODO
+				this.promptAddBomb(o2, v);
+			}
+		},
 		getSelectCards: function() {
 			var cards = [];
 			this.selectElems = this.playerElem.children('.selected').each(function() {
@@ -1373,17 +1624,73 @@
 
 			self.leadCards = o.cards;
 
-			// console.log(o);
+			var isSelf = self.playerPosition === self.lastLeadPosition;
+			var k;
 
 			for(k in self.validRules) {
-				if(self.validRules[k].call(self, o) && (self.playerPosition === self.lastLeadPosition || self.greaterRules[k].call(self, o, self.lastLeadRule, self.validRules[k]))) {
+				if(self.validRules[k].call(self, o) && (isSelf || self.greaterRules[k].call(self, o, self.lastLeadRule, self.validRules[k]))) {
 					self.cardLabel = self.labels[k];
 					self.cardName = k;
-					// console.log(self.cardLabel);
 					return true;
 				}
 			}
 			return false;
+		},
+		promptLeads: function() {
+			var self = this;
+			
+			if(!self.lastLeadRule || self.lastLeadPosition === self.playerPosition) {
+				
+				return false;
+			}
+			
+			var pukeElems = self.playerElem.children('.puke');
+			
+			if(self.nPukes === pukeElems.size()) {
+				
+				return self.cardPukes.length > 0;
+			}
+			
+			self.nPukes = pukeElems.size();
+
+			var o = {cards:{}, s:'', m4:{}, m3:{}, m2:{}};
+			
+			pukeElems.each(function() {
+				var k = $(this).attr('k');
+				var k1 = k[1];
+				
+				if(!o.cards[k1]) {
+					o.cards[k1] = [];
+					o.s += k1;
+				}
+				
+				o.cards[k1].push(k);
+				
+				var n = o.cards[k1].length;
+				if(n>1) {
+					o['m' + n][k1] = 1
+				}
+			});
+			
+			console.log(o);
+			
+			var k, v;
+			
+			var ret = [];
+			for(k in self.promptRules) {
+				if(self.validRules[k].call(self, self.lastLeadRule)) {
+					v = [];
+					self.promptRules[k].call(self, self.lastLeadRule, o, v);
+					
+					if(v.length) {
+						ret = ret.concat(v);
+					}
+				}
+			}
+			
+			self.cardPukes = ret;
+			
+			return self.cardPukes.length > 0;
 		},
 		renderLeft: function(k) {
 			var self = this;
