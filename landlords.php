@@ -4,6 +4,7 @@ header('Content-Type: text/paint; charset=utf-8');
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE & ~E_WARNING & ~E_STRICT);
 
 define('TIMESTAMP', microtime(true));
+define('ACTION_TYPE_RELOAD', 0); // 重新加载页面
 define('ACTION_TYPE_ROB_LANDLORDS', 1); // 抢地主，isRobot(是否机器人处理)
 define('ACTION_TYPE_NO_ROB', 2); // 不抢
 define('ACTION_TYPE_LANDLORDS', 3); // 确定地主
@@ -813,9 +814,9 @@ function validCustom($data, $pattern, $message) {
 /**
  * 用户注册
  *
- * @param string $username
- * @param string $password
- * @param string $repassword
+ * @param string $username        	
+ * @param string $password        	
+ * @param string $repassword        	
  */
 function actionRegister($username, $password, $repassword) {
 	$messages = validForm(get_defined_vars(), array (
@@ -880,8 +881,8 @@ function actionRegister($username, $password, $repassword) {
 /**
  * 用户登录
  *
- * @param string $username
- * @param string $password
+ * @param string $username        	
+ * @param string $password        	
  */
 function actionLogin($username, $password) {
 	$messages = validForm(get_defined_vars(), array (
@@ -1054,7 +1055,7 @@ function actionInit($uid, $username, $deskId, $deskPosition, $scores, $isWoman, 
 		}
 		
 		// 未开局，发牌并初始化开局参数
-		if(!$isPlaying && $players == 3) {
+		if((!$isPlaying || $action === 'call') && $players == 3) {
 			$isPlaying = 1;
 			$pukes = array (
 				'LW' 
@@ -1300,11 +1301,14 @@ function callLandlords($uid, $deskId, $openGames, $deskPosition, $cards, $isRob 
 	}
 	
 	$lastRobRow = false;
-	$robs = 0;
+	$robs = $noRobs = 0;
 	while(($row = $stmt->fetchObject()) !== false) {
 		if($row->actionType == ACTION_TYPE_ROB_LANDLORDS) {
 			$lastRobRow = $row;
 			$robs++;
+			$noRobs = 0;
+		} else {
+			$noRobs++;
 		}
 	}
 	
@@ -1327,6 +1331,19 @@ function callLandlords($uid, $deskId, $openGames, $deskPosition, $cards, $isRob 
 			$deskId 
 		);
 		prepare($sql, $params);
+	} elseif($noRobs >= 3) {
+		runFunction('actionInit', $_REQUEST);
+		$sql = 'INSERT INTO desk_action_logs (uid, deskId, openGames, actionType, weightPosition, beforeCards, dateline, createTime)VALUES(?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), NOW())';
+		$params = array (
+			$uid,
+			$deskId,
+			getDeskById($deskId, 0, 'openGames'),
+			ACTION_TYPE_RELOAD,
+			$deskPosition,
+			$cards
+		);
+		prepare($sql, $params);
+		return 'restart';
 	} else {
 		return false;
 	}

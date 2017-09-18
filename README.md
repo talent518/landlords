@@ -11,6 +11,7 @@ UPDATE users SET deskId=0,deskPosition=NULL,scores=0;
 ```
 
 # desk_action_logs.actionType
+  * 0 => ACTION_TYPE_RELOAD: 重新加载页面
   * 1 => ACTION_TYPE_ROB_LANDLORDS: 抢地主，isRobot(是否机器人处理)
   * 2 => ACTION_TYPE_NO_ROB: 不抢
   * 3 => ACTION_TYPE_LANDLORDS: 确定地主

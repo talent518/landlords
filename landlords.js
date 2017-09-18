@@ -1,4 +1,5 @@
 (function($) {
+	const ACTION_TYPE_RELOAD = 0; // 重新加载页面
 	const ACTION_TYPE_ROB_LANDLORDS = 1; // 抢地主，isRobot(是否机器人处理)
 	const ACTION_TYPE_NO_ROB = 2; // 不抢
 	const ACTION_TYPE_LANDLORDS = 3; // 确定地主
@@ -860,13 +861,17 @@
 			}
 		},
 		renderProcess: function(json) {
-			var self = this
+			var self = this;
 
 			$.each(json.actions, function(k, v) {
 				var msg = '';
 				var isKeep = false;
 
 				switch(v.actionType) {
+					case ACTION_TYPE_RELOAD:
+						location.reload();
+						return;
+						break;
 					case ACTION_TYPE_ROB_LANDLORDS:
 						msg = '叫地主';
 						break;
