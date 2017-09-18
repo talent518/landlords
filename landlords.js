@@ -701,6 +701,33 @@
 				clean: cleanCall
 			};
 		},
+		timeout: function() {
+			var self = this;
+			if(self.isPlaying === 3) {
+				isPrompt = self.btnLeadElem.is(':visible');
+				if(isPrompt && self.promptLeads()) {
+					self.selectElems = $([]);
+					self.leadCards = self.cardPukes[0];
+					$.each(self.cardPukes[0], function(k, v) {
+						self.selectElems = self.selectElems.add(self.playerElem.find('[k="' + v + '"]'));
+					});
+					self.post('lead', {cards: self.cardPukes[0].join(',')});
+					return;
+				} else if(!isPrompt) {
+					self.selectElems = self.playerElem.children('.puke').last();
+					self.leadCards = [self.selectElems.attr('k')];
+					var prevElem = self.selectElems.prev();
+					while(prevElem.attr('k')[1] === cards[0][1]) {
+						self.selectElems = self.selectElems.add(prevElem);
+						self.leadCards.push(prevElem.attr('k'));
+						prevElem = prevElem.prev();
+					}
+					self.post('lead', {cards: self.leadCards.join(',')});
+					return;
+				}
+			}
+			self.post('timeout');
+		},
 		renderInit: function(json) {
 			var self = this;
 
@@ -959,7 +986,7 @@
 							self.leftDownTimer.clean();
 
 							self.playerLeadElem.empty();
-							self.playerDownTimer = self.downTimer(self.playerTimerElem.show(), function(){self.post('timeout');});
+							self.playerDownTimer = self.downTimer(self.playerTimerElem.show(), function(){self.timeout();});
 							self.renderBtn(json.isPlaying);
 						} else {
 							self.weightPosition = self.rightPosition;
@@ -1001,7 +1028,7 @@
 							
 							self.playerMsgElem.text('');
 							self.playerLeadElem.empty();
-							self.playerDownTimer = self.downTimer(self.playerTimerElem.show(), function(){self.post('timeout');});
+							self.playerDownTimer = self.downTimer(self.playerTimerElem.show(), function(){self.timeout();});
 
 							self.renderBtn(json.isPlaying);
 						}
@@ -1090,7 +1117,7 @@
 
 			if(self.playerPosition === self.weightPosition) {
 				self.renderBtn(self.isPlaying);
-				self.playerDownTimer = self.downTimer(self.playerTimerElem.show(), function(){self.post('timeout');});
+				self.playerDownTimer = self.downTimer(self.playerTimerElem.show(), function(){self.timeout();});
 			} else {
 				if(self.rightPosition === self.weightPosition) {
 					self.rightDownTimer = self.downTimer(self.rightTimerElem.show());
@@ -1383,7 +1410,7 @@
 		charSortRule: '34567891JQKA2W',
 		greaterRules: {
 			single: function(o, o2, f) { // 单
-				return f.call(this, o2) && this.charSortRule.indexOf(o.s) > this.charSortRule.indexOf(o2.s);
+				return f.call(this, o2) && (o.cards[0] === 'BW' || this.charSortRule.indexOf(o.s) > this.charSortRule.indexOf(o2.s));
 			},
 			straight: function(o, o2, f) { // 顺子
 				return o.s.length === o2.s.length && f.call(this, o2) && this.charSortRule.indexOf(o.s[0]) > this.charSortRule.indexOf(o2.s[0]);
@@ -1440,6 +1467,10 @@
 					if(o2.cards[k]) {
 						v.push(o2.cards[k].rslice(1));
 					}
+				}
+				
+				if('BW' === o2.cards.W[0]) {
+					v.push(['BW']);
 				}
 				
 				this.promptAddBomb(o2, v);
@@ -1515,7 +1546,7 @@
 					k = this.charSortRule[i];
 					
 					if(o2.m3[k]) {
-						var a = v.push(o2.cards[k].rslice(3));
+						var a = o2.cards[k].rslice(3);
 						
 						$.each(o2.s.split('').reverse(), function($k,$v) {
 							if($v !== k) {
@@ -1710,7 +1741,6 @@
 								}
 							});
 							
-							console.log(a1);
 							$.each($.distinctGroup(a1, o.m3.length), function($k,$v) {
 								v.push(a.concat($v));
 							});
@@ -1809,8 +1839,6 @@
 					o['m' + n][k1] = 1
 				}
 			});
-			
-			console.log(o);
 			
 			var k, v;
 			

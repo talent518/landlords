@@ -1536,10 +1536,6 @@ function confirmDouble($deskId, $openGames) {
 }
 
 function actionTimeout($uid, $deskId, $deskPosition) {
-	return array (
-		'eval' => 'location.reload();' 
-	);
-	
 	$desk = getDeskById($deskId);
 	if($deskPosition !== $desk->weightPosition || $desk->{$deskPosition . 'Uid'} != $uid) {
 		return array (
@@ -1654,7 +1650,7 @@ class LeadCardRule {
 	}
 
 	public function singleSort($o) {
-		return $o->single() && strpos(self::charSortRule, $this->s) > strpos(self::charSortRule, $o->s);
+		return $o->single() && ($this->cards[0] === 'BW' || strpos(self::charSortRule, $this->s) > strpos(self::charSortRule, $o->s));
 	}
 
 	public function straight() { // 顺子
