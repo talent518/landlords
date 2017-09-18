@@ -31,6 +31,40 @@
 	Array.prototype.rslice = function(n) {
 		return this.slice(this.length-n, this.length);
 	};
+	
+	$.distinctGroup = function(a, n, r, k, deep, v) {
+		if(!v) {
+			v = [];
+		}
+		if(!r) {
+			r = [];
+		}
+		if(!k) {
+			k = 0;
+		}
+		if(!deep) {
+			deep = 1;
+		}
+		if(a.length < n) {
+			return [];
+		}
+		if(a.length === n) {
+			return a;
+		}
+		var i;
+		
+		for(i=k;i<=k+(a.length-n) && i<a.length;i++) {
+			var b = v.concat([a[i]]);
+			if(deep === n) {
+				r.push(b);
+				continue;
+			}
+
+			$.distinctGroup(a, n, r, i+1, deep+1, b);
+		}
+		
+		return r;
+	}
 
 	/**
 	 * 初始化多维数组
@@ -1068,8 +1102,6 @@
 		renderLeads: function() {
 			var self = this;
 
-			// console.log(self.lastLeadPosition, self.lastLeads, self.lastLeadName, self.lastLeadLabel);
-			
 			if(typeof(self.lastLeads) !== 'string' || self.lastLeads.length === 0 || self.weightPosition === self.lastLeadPosition) {
 				self.lastLeadRule = false;
 				return;
@@ -1396,6 +1428,7 @@
 				v.push(o.cards.W);
 			}
 		},
+		straightASCRule: 'AKQJ19876543',
 		promptRules: {
 			single: function(o, o2, v) { // 单
 				var k, i = this.charSortRule.indexOf(o.s[0]);
@@ -1412,13 +1445,31 @@
 				this.promptAddBomb(o2, v);
 			},
 			straight: function(o, o2, v) { // 顺子
-				// TODO
+				var k, i = this.straightASCRule.indexOf(o.s);
+				
+				if(i<=0) {
+					this.promptAddBomb(o2, v);
+					return;
+				}
+				i--;
+				for(;i>=0;i--) {
+					k = this.straightASCRule.substr(i, o.s.length);
+					if(o2.s.indexOf(k) > -1) {
+						var a = [];
+						$.each(k, function($k,$v) {
+							a.push(o2.cards[$v].rslice(1)[0]);
+						});
+						v.push(a);
+					}
+				}
+				
 				this.promptAddBomb(o2, v);
 			},
 			pair: function(o, o2, v) { // 对子
 				var k, i = this.charSortRule.indexOf(o.s[0]);
 				
 				if(i<0) {
+					this.promptAddBomb(o2, v);
 					return;
 				}
 				i++;
@@ -1438,6 +1489,7 @@
 				var k, i = this.charSortRule.indexOf(o.m3[0][1]);
 				
 				if(i<0) {
+					this.promptAddBomb(o2, v);
 					return;
 				}
 				i++;
@@ -1455,6 +1507,7 @@
 				var k, i = this.charSortRule.indexOf(o.m3[0][1]);
 				
 				if(i<0) {
+					this.promptAddBomb(o2, v);
 					return;
 				}
 				i++;
@@ -1478,6 +1531,7 @@
 				var k, i = this.charSortRule.indexOf(o.s[0]);
 				
 				if(i<0) {
+					this.promptAddBomb(o2, v, true);
 					return;
 				}
 				i++;
@@ -1495,6 +1549,7 @@
 				var k, i = this.charSortRule.indexOf(o.m3[0][1]);
 				
 				if(i<0) {
+					this.promptAddBomb(o2, v);
 					return;
 				}
 				i++;
@@ -1519,6 +1574,7 @@
 				var k, i = this.charSortRule.indexOf(o.m4[0][1]);
 				
 				if(i<0) {
+					this.promptAddBomb(o2, v);
 					return;
 				}
 				i++;
@@ -1549,7 +1605,7 @@
 							var i1, i2;
 							for(i1 = 0; i1 < a1.length-1; i1++) {
 								for(i2 = i1+1; i2 < a1.length; i2++) {
-									v.push(a.concat([o2.cards[a1[i1]].rslice(1), o2.cards[a1[i2]].rslice(1)]));
+									v.push(a.concat(o2.cards[a1[i1]].rslice(1), o2.cards[a1[i2]].rslice(1)));
 								}
 							}
 						}
@@ -1575,11 +1631,93 @@
 				this.promptAddBomb(o2, v);
 			},
 			continuityPair: function(o, o2, v) { // 连对: 最少3连对
-				// TODO
+				var k, i = this.straightASCRule.indexOf(o.s[0]);
+				
+				if(i<=0) {
+					this.promptAddBomb(o2, v);
+					return;
+				}
+				i--;
+				for(;i>=0;i--) {
+					k = this.straightASCRule.substr(i, o.m2.length);
+					if(o2.s.indexOf(k) > -1) {
+						var a = [];
+						$.each(k, function($k,$v) {
+							if(o2.m2[$v]) {
+								a = a.concat(o2.cards[$v].rslice(2));
+							} else {
+								return false;
+							}
+						});
+						if(a.length === o.s.length) {
+							v.push(a);
+						}
+					}
+				}
+				
 				this.promptAddBomb(o2, v);
 			},
 			airplane: function(o, o2, v) { // 飞机
-				// TODO
+				var k, i = this.straightASCRule.indexOf(o.m3[0][0]);
+				
+				if(i<=0) {
+					this.promptAddBomb(o2, v);
+					return;
+				}
+				i--;
+				for(;i>=0;i--) {
+					k = this.straightASCRule.substr(i, o.m3.length);
+					if(o2.s.indexOf(k) > -1) {
+						var a = [];
+						$.each(k, function($k,$v) {
+							if(o2.m3[$v]) {
+								a = a.concat(o2.cards[$v].rslice(3));
+							} else {
+								return false;
+							}
+						});
+						if(a.length !== o.m3.length*3) {
+							continue;
+						}
+						
+						if(o.s.length%5 === 0) {
+							var a2 = [];
+							$.each(o2.s.split('').reverse(), function($k,$v) {
+								if(k.indexOf($v) === -1 && o2.m2[$v]) {
+									a2.push($v);
+								}
+							});
+							if(a2.length < o.m3.length) {
+								continue;
+							}
+							
+							var i1, i2;
+							for(i1 = 0; i1 < a2.length-1; i1++) {
+								for(i2 = i1+1; i2 < a2.length; i2++) {
+									v.push(a.concat(o2.cards[a1[i1]].rslice(2), o2.cards[a1[i2]].rslice(2)));
+								}
+							}
+						} else {
+							var a1 = [];
+							$.each(o2.s.split('').reverse(), function($k,$v) {
+								if(k.indexOf($v) === -1) {
+									var $a = o2.cards[$v];
+									if($a.length>1) {
+										a1 = a1.concat($a.rslice(2));
+									} else if($a.length) {
+										a1 = a1.concat($a.rslice(1));
+									}
+								}
+							});
+							
+							console.log(a1);
+							$.each($.distinctGroup(a1, o.m3.length), function($k,$v) {
+								v.push(a.concat($v));
+							});
+						}
+					}
+				}
+				
 				this.promptAddBomb(o2, v);
 			}
 		},
